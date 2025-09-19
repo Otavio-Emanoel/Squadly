@@ -56,9 +56,6 @@ O **tema visual** do Squadly é inspirado no **espaço sideral**:
 
 🚧 Em desenvolvimento... 🚧
 
----
-
-Quer que eu já te prepare também uma **estrutura inicial de pastas** (frontend, backend e mobile) pra você não começar do zero?
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
