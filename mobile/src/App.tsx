@@ -3,10 +3,12 @@ import React, { useState } from 'react';
 import { Alert, StyleSheet, View } from 'react-native';
 import SplashScreen from './screens/splashScreen';
 import LoginScreen from './screens/loginScreen';
+import RegisterScreen from './screens/registerScreen';
 
 export default function App() {
   const [ready, setReady] = useState(false);
   const [logged, setLogged] = useState(false);
+  const [authScreen, setAuthScreen] = useState<'login' | 'register'>('login');
 
   if (!ready) {
     return <SplashScreen onFinish={() => setReady(true)} />;
@@ -15,16 +17,23 @@ export default function App() {
   if (!logged) {
     return (
       <>
-        <LoginScreen
-          onLogin={(email, _password) => {
-            // Mock: sucesso
-            setLogged(true);
-            Alert.alert('Bem-vindo!', `Logado como ${email}`);
-          }}
-          onRegister={() => {
-            Alert.alert('Registro', 'Navegar para tela de registro (a criar).');
-          }}
-        />
+        {authScreen === 'login' ? (
+          <LoginScreen
+            onLogin={(email, _password) => {
+              setLogged(true);
+              Alert.alert('Bem-vindo!', `Logado como ${email}`);
+            }}
+            onRegister={() => setAuthScreen('register')}
+          />
+        ) : (
+          <RegisterScreen
+            onRegister={({ name, email }) => {
+              setLogged(true);
+              Alert.alert('Conta criada!', `Bem-vindo, ${name || email}!`);
+            }}
+            onGoToLogin={() => setAuthScreen('login')}
+          />
+        )}
         <StatusBar style="light" />
       </>
     );
