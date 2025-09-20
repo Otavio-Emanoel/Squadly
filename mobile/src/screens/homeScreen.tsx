@@ -4,7 +4,6 @@ import { BlurView } from 'expo-blur';
 import ConnectionBadge from '../components/ConnectionBadge';
 import { getMe, User } from '../services/auth';
 import FeatureCards, { FeatureCardItem } from '../components/FeatureCards';
-import LiquidNavbar, { LiquidNavItem } from '../components/LiquidNavbar';
 
 const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
 
@@ -79,18 +78,10 @@ export type HomeScreenProps = {
   token: string;
   onLogout?: () => void;
   onOpenKanban?: () => void;
+  onOpenProfile?: () => void;
 };
 
-export default function HomeScreen({ token, onLogout, onOpenKanban }: HomeScreenProps) {
-  // Estado da aba ativa
-  const [activeTab, setActiveTab] = useState(0);
-  // Itens da navbar
-  const navItems: LiquidNavItem[] = [
-    { key: 'home', label: 'Home', icon: 'home' },
-    { key: 'inbox', label: 'Caixa de entrada', icon: 'notifications-outline' },
-    { key: 'explore', label: 'Explorar', icon: 'telescope' },
-    { key: 'profile', label: 'Perfil', icon: 'person-circle', isProfile: true },
-  ];
+export default function HomeScreen({ token, onLogout, onOpenKanban, onOpenProfile }: HomeScreenProps) {
   const stars = useStarfield(110);
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
@@ -102,7 +93,6 @@ export default function HomeScreen({ token, onLogout, onOpenKanban }: HomeScreen
   const animFeatures = useRef(new Animated.Value(0)).current;
   const animGrid = useRef(new Animated.Value(0)).current;
   const animLogout = useRef(new Animated.Value(0)).current;
-  const animNavbar = useRef(new Animated.Value(0)).current;
   const animBadge = useRef(new Animated.Value(0)).current;
   const leavingRef = useRef(false);
   // Cometa removido
@@ -152,9 +142,8 @@ export default function HomeScreen({ token, onLogout, onOpenKanban }: HomeScreen
       show(animFeatures, 220),
       show(animGrid, 320),
       show(animLogout, 420),
-      show(animNavbar, 520),
     ]).start();
-  }, [animBadge, animHeader, animFeatures, animGrid, animLogout, animNavbar]);
+  }, [animBadge, animHeader, animFeatures, animGrid, animLogout]);
 
   // Função de saída com atraso antes de navegar
   const leaveAndNavigate = (cb?: () => void) => {
@@ -169,7 +158,6 @@ export default function HomeScreen({ token, onLogout, onOpenKanban }: HomeScreen
         useNativeDriver: true,
       });
     Animated.parallel([
-      hide(animNavbar, 0),
       hide(animLogout, 40),
       hide(animGrid, 80),
       hide(animFeatures, 120),
@@ -325,26 +313,7 @@ export default function HomeScreen({ token, onLogout, onOpenKanban }: HomeScreen
         {/* Botão extra removido: agora usamos o card "Kanban" acima */}
       </ScrollView>
 
-      {/* Navbar fixa no rodapé, sobreposta */}
-      <Animated.View
-        style={[
-          styles.navbarWrap,
-          {
-            opacity: animNavbar,
-            transform: [{ translateY: animNavbar.interpolate({ inputRange: [0, 1], outputRange: [20, 0] }) }],
-          },
-        ]}
-        pointerEvents="box-none"
-      >
-        <LiquidNavbar
-          items={navItems}
-          activeIndex={activeTab}
-          onPress={setActiveTab}
-          showLabels
-          fabIconName="planet"
-          onFabPress={() => Alert.alert('FAB', 'Ação do botão flutuante!')}
-        />
-      </Animated.View>
+      {/* Navbar persistente agora fica no App */}
     </View>
   );
 }
