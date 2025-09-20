@@ -17,4 +17,13 @@ export class AuthController {
       return res.status(status).json({ message: err?.message || 'Erro ao autenticar' });
     }
   }
+
+  async me(req: Request, res: Response) {
+    if (!req.user) {
+      return res.status(401).json({ message: 'Não autorizado' });
+    }
+    // Remover campos sensíveis se existirem
+    const { password, ...safe } = (req.user as any) || {};
+    return res.json({ user: safe });
+  }
 }

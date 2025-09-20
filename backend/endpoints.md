@@ -135,6 +135,28 @@ Observações
 - Configure `JWT_SECRET` e `JWT_EXPIRES_IN` no `.env`.
 - O `token` deve ser enviado em futuras rotas protegidas no cabeçalho `Authorization: Bearer <token>`.
 
+### Usuário atual
+GET `/api/auth/me`
+- Auth: sim (Bearer token)
+- Headers:
+  - `Authorization: Bearer <token>`
+- 200 (exemplo)
+```json
+{
+  "user": {
+    "_id": "665f1e2b4c...",
+    "name": "Seu Nome",
+    "email": "voce@exemplo.com",
+    "createdAt": "2025-09-19T12:00:00.000Z",
+    "updatedAt": "2025-09-19T12:00:00.000Z",
+    "__v": 0
+  }
+}
+```
+- 401
+```json
+{ "message": "Não autorizado" }
+```
+
 Notas
-- Autenticação/JWT ainda não implementada. Endpoints protegidos serão documentados aqui quando adicionados.
 - Este documento deve ser atualizado a cada novo endpoint ou alteração de contrato.

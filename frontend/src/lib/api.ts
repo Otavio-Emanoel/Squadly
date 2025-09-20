@@ -13,6 +13,14 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
     headers.set("Content-Type", "application/json");
   }
 
+  // Adiciona Authorization automaticamente se houver token no browser
+  if (typeof window !== 'undefined') {
+    const token = localStorage.getItem('token');
+    if (token && !headers.has('Authorization')) {
+      headers.set('Authorization', `Bearer ${token}`);
+    }
+  }
+
   const res = await fetch(url, { ...options, headers, credentials: "include" });
 
   const text = await res.text();
@@ -49,4 +57,5 @@ export const authApi = {
     api.post<AuthResponse>("/api/auth/login", { email, password }),
   register: (name: string, email: string, password: string) =>
     api.post<AuthResponse>("/api/users", { name, email, password }),
+  me: () => api.get<{ user: { _id: string; name: string; email: string } }>("/api/auth/me"),
 };
