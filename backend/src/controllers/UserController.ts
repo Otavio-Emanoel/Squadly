@@ -1,10 +1,15 @@
 import { Request, Response } from 'express';
-import { createUser } from '../services/user.service';
+import { createUser, listUsers } from '../services/user.service';
 
 export class UserController {
-  async index(_req: Request, res: Response) {
-    // Listar usuários (mock inicial)
-    return res.json([{ id: '1', name: 'Ada Lovelace' }]);
+  async index(req: Request, res: Response) {
+    try {
+      const { page, limit, q } = req.query as any;
+      const result = await listUsers({ page: page ? Number(page) : undefined, limit: limit ? Number(limit) : undefined, q });
+      return res.json(result);
+    } catch (err: any) {
+      return res.status(500).json({ message: err?.message || 'Erro ao listar usuários' });
+    }
   }
 
   async create(req: Request, res: Response) {

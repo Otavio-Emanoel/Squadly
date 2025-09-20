@@ -50,13 +50,28 @@ GET `/api/ping`
 
 ## Usuários
 
-### Listar (temporário/mock)
+### Listar usuários (paginado)
 GET `/api/users`
-- Auth: não (por enquanto)
-- Body: —
-- 200
+- Auth: sim (Bearer token)
+- Query params (opcionais):
+  - `page` (number, default 1)
+  - `limit` (number, default 20, máx 100)
+  - `q` (string) — busca parcial por nome ou e-mail
+- 200 (exemplo)
 ```json
-[{ "id": "1", "name": "Ada Lovelace" }]
+{
+  "data": [
+    { "_id": "665f1e2b4c...", "name": "Ada", "email": "ada@ex.com", "createdAt": "...", "updatedAt": "..." }
+  ],
+  "page": 1,
+  "limit": 20,
+  "total": 1,
+  "totalPages": 1
+}
+```
+ - 401
+```json
+{ "message": "Não autorizado" }
 ```
 
 ### Cadastrar usuário
