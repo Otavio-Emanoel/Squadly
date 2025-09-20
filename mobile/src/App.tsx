@@ -29,9 +29,10 @@ export default function App() {
           />
         ) : (
           <RegisterScreen
-            onRegister={({ name, email }) => {
-              setAuthScreen('login');
-              Alert.alert('Conta criada!', `Bem-vindo, ${name || email}! Faça login para continuar.`);
+            onRegister={({ email, token }) => {
+              setToken(token);
+              setLogged(true);
+              Alert.alert('Conta criada!', `Bem-vindo, ${email}!`);
             }}
             onGoToLogin={() => setAuthScreen('login')}
           />

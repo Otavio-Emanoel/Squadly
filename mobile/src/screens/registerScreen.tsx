@@ -17,6 +17,7 @@ import {
 import { BlurView } from 'expo-blur';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { registerUser } from '../services/auth';
+import { loginUser } from '../services/auth';
 
 const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
 
@@ -90,7 +91,7 @@ function useStarfield(total = 70) {
 }
 
 export type RegisterScreenProps = {
-  onRegister?: (data: { name: string; email: string; password: string; confirmPassword: string }) => void;
+  onRegister?: (data: { email: string; token: string; name?: string }) => void;
   onGoToLogin?: () => void;
 };
 
@@ -165,7 +166,9 @@ export default function RegisterScreen({ onRegister, onGoToLogin }: RegisterScre
     (async () => {
       try {
         const user = await registerUser({ name: name.trim(), email: email.trim(), password });
-        onRegister && onRegister({ name: user.name, email: user.email, password, confirmPassword });
+        // login automático
+        const { token, user: u } = await loginUser(email.trim(), password);
+        onRegister && onRegister({ email: u.email, token, name: u.name });
       } catch (e: any) {
         Alert.alert('Falha no cadastro', e?.message || 'Tente novamente');
       } finally {
