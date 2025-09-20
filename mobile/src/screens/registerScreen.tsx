@@ -106,6 +106,8 @@ export default function RegisterScreen({ onRegister, onGoToLogin }: RegisterScre
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [success, setSuccess] = useState(false);
 
   const nameRef = useRef<TextInput>(null);
   const emailRef = useRef<TextInput>(null);
@@ -115,6 +117,11 @@ export default function RegisterScreen({ onRegister, onGoToLogin }: RegisterScre
   const scaleIn = useRef(new Animated.Value(0.96)).current;
   const cardOpacity = useRef(new Animated.Value(0)).current;
   const kbAnim = useRef(new Animated.Value(0)).current; // 0: teclado fechado, 1: aberto
+  // animações do botão
+  const btnScale = useRef(new Animated.Value(1)).current;
+  const btnSheen = useRef(new Animated.Value(0)).current; // 0..1
+  const btnSpin = useRef(new Animated.Value(0)).current; // 0..1 rotativo
+  const errorShake = useRef(new Animated.Value(0)).current; // -X..X
 
   useEffect(() => {
     Animated.parallel([
@@ -159,19 +166,59 @@ export default function RegisterScreen({ onRegister, onGoToLogin }: RegisterScre
 
   const handleSubmit = useCallback(() => {
     if (loading) return;
-    if (!name.trim() || !email.trim() || password.length < 6 || password !== confirmPassword) {
-      // Não mostrar Alert, apenas não prosseguir
+    // validações simples
+    if (!name.trim()) {
+      setErrorMsg('Informe seu nome.');
       return;
     }
+    if (!email.trim()) {
+      setErrorMsg('Informe um e-mail válido.');
+      return;
+    }
+    if (password.length < 6) {
+      setErrorMsg('A senha deve ter pelo menos 6 caracteres.');
+      return;
+    }
+    if (password !== confirmPassword) {
+      setErrorMsg('As senhas não coincidem.');
+      return;
+    }
+    setErrorMsg(null);
     setLoading(true);
+    setSuccess(false);
+    // iniciar animações de loading
+    btnSheen.setValue(0);
+    btnSpin.setValue(0);
+    Animated.loop(
+      Animated.timing(btnSheen, { toValue: 1, duration: 1500, easing: Easing.inOut(Easing.quad), useNativeDriver: true })
+    ).start();
+    Animated.loop(
+      Animated.timing(btnSpin, { toValue: 1, duration: 900, easing: Easing.linear, useNativeDriver: true })
+    ).start();
     (async () => {
       try {
         const user = await registerUser({ name: name.trim(), email: email.trim(), password });
         // login automático
         const { token, user: u } = await loginUser(email.trim(), password);
-        onRegister && onRegister({ email: u.email, token, name: u.name });
+        setSuccess(true);
+        Animated.sequence([
+          Animated.timing(btnScale, { toValue: 0.98, duration: 120, easing: Easing.out(Easing.quad), useNativeDriver: true }),
+          Animated.spring(btnScale, { toValue: 1, useNativeDriver: true, tension: 140, friction: 8 }),
+        ]).start();
+        setTimeout(() => {
+          onRegister && onRegister({ email: u.email, token, name: u.name });
+        }, 420);
       } catch (e: any) {
-        // Não mostrar Alert, apenas ignore
+        const msg = e?.message || 'Erro ao criar conta. Tente novamente.';
+        setErrorMsg(msg);
+        errorShake.setValue(0);
+        Animated.sequence([
+          Animated.timing(errorShake, { toValue: 1, duration: 40, useNativeDriver: true }),
+          Animated.timing(errorShake, { toValue: -1, duration: 40, useNativeDriver: true }),
+          Animated.timing(errorShake, { toValue: 0.7, duration: 35, useNativeDriver: true }),
+          Animated.timing(errorShake, { toValue: -0.5, duration: 30, useNativeDriver: true }),
+          Animated.timing(errorShake, { toValue: 0, duration: 30, useNativeDriver: true }),
+        ]).start();
       } finally {
         setLoading(false);
       }
@@ -217,6 +264,13 @@ export default function RegisterScreen({ onRegister, onGoToLogin }: RegisterScre
               <Text style={styles.title}>Criar conta</Text>
               <Text style={styles.subtitle}>Comece a organizar seu universo</Text>
 
+              {errorMsg ? (
+                <View style={styles.errorBox}>
+                  <Ionicons name="alert-circle" size={18} color="#FF6B6B" style={{ marginRight: 8 }} />
+                  <Text style={styles.errorText}>{errorMsg}</Text>
+                </View>
+              ) : null}
+
               <View style={styles.fieldGroup}>
                 <Text style={styles.label}>Nome</Text>
                 <TextInput
@@ -226,7 +280,10 @@ export default function RegisterScreen({ onRegister, onGoToLogin }: RegisterScre
                   placeholderTextColor="rgba(241,250,238,0.5)"
                   returnKeyType="next"
                   value={name}
-                  onChangeText={setName}
+                  onChangeText={(t) => {
+                    setName(t);
+                    if (errorMsg) setErrorMsg(null);
+                  }}
                   onSubmitEditing={() => emailRef.current?.focus()}
                   blurOnSubmit={false}
                   textContentType="name"
@@ -246,7 +303,10 @@ export default function RegisterScreen({ onRegister, onGoToLogin }: RegisterScre
                   autoCapitalize="none"
                   autoCorrect={false}
                   value={email}
-                  onChangeText={setEmail}
+                  onChangeText={(t) => {
+                    setEmail(t);
+                    if (errorMsg) setErrorMsg(null);
+                  }}
                   onSubmitEditing={() => passwordRef.current?.focus()}
                   blurOnSubmit={false}
                   importantForAutofill="yes"
@@ -266,7 +326,10 @@ export default function RegisterScreen({ onRegister, onGoToLogin }: RegisterScre
                     secureTextEntry={!showPassword}
                     returnKeyType="next"
                     value={password}
-                    onChangeText={setPassword}
+                    onChangeText={(t) => {
+                      setPassword(t);
+                      if (errorMsg) setErrorMsg(null);
+                    }}
                     onSubmitEditing={() => confirmRef.current?.focus()}
                     textContentType="newPassword"
                     autoComplete="password-new"
@@ -296,7 +359,10 @@ export default function RegisterScreen({ onRegister, onGoToLogin }: RegisterScre
                     secureTextEntry={!showConfirm}
                     returnKeyType="go"
                     value={confirmPassword}
-                    onChangeText={setConfirmPassword}
+                    onChangeText={(t) => {
+                      setConfirmPassword(t);
+                      if (errorMsg) setErrorMsg(null);
+                    }}
                     onSubmitEditing={handleSubmit}
                     textContentType="oneTimeCode" // evita autofill agressivo sobrepor
                     autoCorrect={false}
@@ -316,8 +382,54 @@ export default function RegisterScreen({ onRegister, onGoToLogin }: RegisterScre
 
               <View style={{ height: 8 }} />
 
-              <Pressable onPress={handleSubmit} disabled={loading} style={({ pressed }) => [styles.primaryBtn, pressed && styles.btnPressed]}> 
-                <Text style={styles.primaryText}>{loading ? 'Criando...' : 'Criar conta'}</Text>
+              <Pressable
+                onPressIn={() => !loading && Animated.timing(btnScale, { toValue: 0.98, duration: 90, easing: Easing.out(Easing.quad), useNativeDriver: true }).start()}
+                onPressOut={() => Animated.spring(btnScale, { toValue: 1, useNativeDriver: true, tension: 140, friction: 10 }).start()}
+                onPress={handleSubmit}
+                disabled={loading}
+                style={({ pressed }) => [styles.primaryBtn, pressed && !loading && styles.btnPressed]}
+              > 
+                <Animated.View style={{ transform: [{ scale: btnScale }] }}>
+                  <View style={styles.btnContentRow}>
+                    {!loading && !success ? (
+                      <Ionicons name="person-add" size={16} color="rgba(241,250,238,0.95)" style={{ marginRight: 8 }} />
+                    ) : null}
+
+                    {loading && !success ? (
+                      <Animated.View
+                        style={{
+                          transform: [
+                            { rotate: btnSpin.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '360deg'] }) },
+                          ],
+                          marginRight: 8,
+                        }}
+                      >
+                        <Ionicons name="sync" size={16} color="rgba(241,250,238,0.95)" />
+                      </Animated.View>
+                    ) : null}
+
+                    {success ? (
+                      <>
+                        <Ionicons name="checkmark-circle" size={18} color="#64DF64" style={{ marginRight: 8 }} />
+                        <Text style={styles.primaryText}>Pronto</Text>
+                      </>
+                    ) : (
+                      <Text style={styles.primaryText}>{loading ? 'Criando...' : 'Criar conta'}</Text>
+                    )}
+                  </View>
+
+                  {loading && (
+                    <Animated.View
+                      pointerEvents="none"
+                      style={[styles.btnSheen, {
+                        transform: [
+                          { rotateZ: '-15deg' },
+                          { translateX: btnSheen.interpolate({ inputRange: [0, 1], outputRange: [-80, 320] }) },
+                        ],
+                      }]}
+                    />
+                  )}
+                </Animated.View>
               </Pressable>
 
               <Pressable onPress={onGoToLogin} style={({ pressed }) => [styles.secondaryBtn, pressed && styles.btnPressed]}> 
@@ -326,7 +438,14 @@ export default function RegisterScreen({ onRegister, onGoToLogin }: RegisterScre
             </BlurView>
           </Animated.View>
 
-          <Text style={styles.footerNote}>Squadly • Produtividade fora da órbita</Text>
+          <Animated.Text
+            style={[
+              styles.footerNote,
+              { transform: [{ translateX: errorShake.interpolate({ inputRange: [-1, 1], outputRange: [-6, 6] }) }] },
+            ]}
+          >
+            Squadly • Produtividade fora da órbita
+          </Animated.Text>
         </ScrollView>
       </View>
     </KeyboardAvoidingView>
@@ -395,6 +514,22 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     opacity: 0.9,
   },
+  errorBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255,107,107,0.12)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.16)',
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: 12,
+    marginBottom: 12,
+  },
+  errorText: {
+    color: '#FFD7D7',
+    fontSize: 13,
+    flex: 1,
+  },
   fieldGroup: { marginBottom: 14 },
   label: { color: 'rgba(241,250,238,0.8)', marginBottom: 6, fontSize: 12 },
   input: {
@@ -424,8 +559,21 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     borderRadius: 12,
     alignItems: 'center',
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.14)'
   },
   btnPressed: { opacity: 0.85 },
+  btnContentRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center' },
+  btnSheen: {
+    position: 'absolute',
+    top: -10,
+    left: -60,
+    width: 80,
+    height: 60,
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    borderRadius: 30,
+  },
   primaryText: { color: COLORS.white, fontWeight: '700', letterSpacing: 0.5 },
   secondaryBtn: { paddingVertical: 12, alignItems: 'center' },
   secondaryText: { color: COLORS.lilac, fontWeight: '600' },

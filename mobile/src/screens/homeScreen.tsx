@@ -97,6 +97,14 @@ export default function HomeScreen({ token, onLogout, onOpenKanban }: HomeScreen
   const [error, setError] = useState<string | null>(null);
 
   const planetScale = useRef(new Animated.Value(0.96)).current;
+  // Animações de entrada/saída
+  const animHeader = useRef(new Animated.Value(0)).current; // 0 -> fora, 1 -> visível
+  const animFeatures = useRef(new Animated.Value(0)).current;
+  const animGrid = useRef(new Animated.Value(0)).current;
+  const animLogout = useRef(new Animated.Value(0)).current;
+  const animNavbar = useRef(new Animated.Value(0)).current;
+  const animBadge = useRef(new Animated.Value(0)).current;
+  const leavingRef = useRef(false);
   // Cometa removido
 
   useEffect(() => {
@@ -128,6 +136,53 @@ export default function HomeScreen({ token, onLogout, onOpenKanban }: HomeScreen
     return () => {};
   }, [planetScale]);
 
+  // Entrada em cascata
+  useEffect(() => {
+    const show = (v: Animated.Value, delay: number) =>
+      Animated.timing(v, {
+        toValue: 1,
+        duration: 420,
+        delay,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: true,
+      });
+    Animated.parallel([
+      show(animBadge, 80),
+      show(animHeader, 120),
+      show(animFeatures, 220),
+      show(animGrid, 320),
+      show(animLogout, 420),
+      show(animNavbar, 520),
+    ]).start();
+  }, [animBadge, animHeader, animFeatures, animGrid, animLogout, animNavbar]);
+
+  // Função de saída com atraso antes de navegar
+  const leaveAndNavigate = (cb?: () => void) => {
+    if (leavingRef.current) return;
+    leavingRef.current = true;
+    const hide = (v: Animated.Value, d: number) =>
+      Animated.timing(v, {
+        toValue: 0,
+        duration: 280,
+        delay: d,
+        easing: Easing.in(Easing.cubic),
+        useNativeDriver: true,
+      });
+    Animated.parallel([
+      hide(animNavbar, 0),
+      hide(animLogout, 40),
+      hide(animGrid, 80),
+      hide(animFeatures, 120),
+      hide(animHeader, 160),
+      hide(animBadge, 180),
+    ]).start(({ finished }) => {
+      setTimeout(() => {
+        cb && cb();
+        leavingRef.current = false;
+      }, 120);
+    });
+  };
+
   const greet = user?.name ? `Olá, ${user.name.split(' ')[0]}!` : 'Olá, Explorador!';
   const subtitle = 'Pronto para organizar sua próxima missão?';
 
@@ -140,7 +195,7 @@ export default function HomeScreen({ token, onLogout, onOpenKanban }: HomeScreen
       image: require('../assets/kanban.png'),
       imageSide: 'right',
       gradient: ['#6D5DF6', '#C86DD7'],
-      onPress: () => onOpenKanban?.(),
+      onPress: () => leaveAndNavigate(() => onOpenKanban?.()),
     },
     {
       id: '2',
@@ -156,9 +211,22 @@ export default function HomeScreen({ token, onLogout, onOpenKanban }: HomeScreen
 
   return (
     <View style={styles.root}>
-      <View pointerEvents="box-none" style={styles.badgeWrap}>
+      <Animated.View
+        pointerEvents="box-none"
+        style={[
+          styles.badgeWrap,
+          {
+            opacity: animBadge,
+            transform: [
+              {
+                translateY: animBadge.interpolate({ inputRange: [0, 1], outputRange: [-10, 0] }),
+              },
+            ],
+          },
+        ]}
+      >
         <ConnectionBadge />
-      </View>
+      </Animated.View>
       {/* Estrelas */}
       {stars.map((s, i) => (
         <Animated.View
@@ -190,15 +258,35 @@ export default function HomeScreen({ token, onLogout, onOpenKanban }: HomeScreen
 
       {/* Conteúdo principal */}
   <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        <BlurView style={styles.headerCard} intensity={80} tint="dark">
+        <Animated.View
+          style={{
+            opacity: animHeader,
+            transform: [{ translateY: animHeader.interpolate({ inputRange: [0, 1], outputRange: [10, 0] }) }],
+          }}
+        >
+          <BlurView style={styles.headerCard} intensity={80} tint="dark">
           <View style={styles.glare} />
           <Text style={styles.headerTitle}>{greet}</Text>
           <Text style={styles.headerSubtitle}>{loading ? 'Carregando...' : error || subtitle}</Text>
-        </BlurView>
+          </BlurView>
+        </Animated.View>
 
-        <FeatureCards items={features} />
+        <Animated.View
+          style={{
+            opacity: animFeatures,
+            transform: [{ translateY: animFeatures.interpolate({ inputRange: [0, 1], outputRange: [10, 0] }) }],
+          }}
+        >
+          <FeatureCards items={features} />
+        </Animated.View>
 
-        <View style={styles.grid}>
+        <Animated.View
+          style={{
+            opacity: animGrid,
+            transform: [{ translateY: animGrid.interpolate({ inputRange: [0, 1], outputRange: [10, 0] }) }],
+          }}
+        >
+          <View style={styles.grid}>
           <ActionCard
             title="Criar Squad"
             description="Monte uma nova tripulação e defina objetivos"
@@ -217,20 +305,37 @@ export default function HomeScreen({ token, onLogout, onOpenKanban }: HomeScreen
             color={COLORS.blue}
             onPress={() => Alert.alert('Explorar', 'Nada como explorar o universo...')} 
           />
-        </View>
+          </View>
+        </Animated.View>
 
-        <Pressable
-          onPress={onLogout}
-          style={({ pressed }) => [styles.logoutBtn, pressed && { opacity: 0.85 }]}
+        <Animated.View
+          style={{
+            opacity: animLogout,
+            transform: [{ translateY: animLogout.interpolate({ inputRange: [0, 1], outputRange: [10, 0] }) }],
+          }}
         >
-          <Text style={styles.logoutText}>Sair</Text>
-        </Pressable>
+          <Pressable
+            onPress={() => leaveAndNavigate(() => onLogout && onLogout())}
+            style={({ pressed }) => [styles.logoutBtn, pressed && { opacity: 0.85 }]}
+          >
+            <Text style={styles.logoutText}>Sair</Text>
+          </Pressable>
+        </Animated.View>
 
         {/* Botão extra removido: agora usamos o card "Kanban" acima */}
       </ScrollView>
 
       {/* Navbar fixa no rodapé, sobreposta */}
-      <View style={styles.navbarWrap} pointerEvents="box-none">
+      <Animated.View
+        style={[
+          styles.navbarWrap,
+          {
+            opacity: animNavbar,
+            transform: [{ translateY: animNavbar.interpolate({ inputRange: [0, 1], outputRange: [20, 0] }) }],
+          },
+        ]}
+        pointerEvents="box-none"
+      >
         <LiquidNavbar
           items={navItems}
           activeIndex={activeTab}
@@ -239,7 +344,7 @@ export default function HomeScreen({ token, onLogout, onOpenKanban }: HomeScreen
           fabIconName="planet"
           onFabPress={() => Alert.alert('FAB', 'Ação do botão flutuante!')}
         />
-      </View>
+      </Animated.View>
     </View>
   );
 }

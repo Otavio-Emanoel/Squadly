@@ -105,6 +105,8 @@ export default function LoginScreen({ onLogin, onRegister }: LoginScreenProps) {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [success, setSuccess] = useState(false);
 
   const emailRef = useRef<TextInput>(null);
   const passwordRef = useRef<TextInput>(null);
@@ -112,6 +114,11 @@ export default function LoginScreen({ onLogin, onRegister }: LoginScreenProps) {
   const scaleIn = useRef(new Animated.Value(0.96)).current;
   const cardOpacity = useRef(new Animated.Value(0)).current;
   const kbAnim = useRef(new Animated.Value(0)).current; // 0: teclado fechado, 1: aberto
+  // animações do botão
+  const btnScale = useRef(new Animated.Value(1)).current;
+  const btnSheen = useRef(new Animated.Value(0)).current; // 0..1
+  const btnSpin = useRef(new Animated.Value(0)).current; // 0..1 rotativo
+  const errorShake = useRef(new Animated.Value(0)).current; // -X..X
 
   useEffect(() => {
     Animated.parallel([
@@ -156,13 +163,48 @@ export default function LoginScreen({ onLogin, onRegister }: LoginScreenProps) {
 
   const handleSubmit = useCallback(() => {
     if (loading) return;
+    // validações simples
+    if (!email.trim() || !password) {
+      setErrorMsg('Informe e-mail e senha.');
+      return;
+    }
+    setErrorMsg(null);
     setLoading(true);
+    setSuccess(false);
+    // iniciar animações de loading
+    btnSheen.setValue(0);
+    btnSpin.setValue(0);
+    Animated.loop(
+      Animated.timing(btnSheen, { toValue: 1, duration: 1500, easing: Easing.inOut(Easing.quad), useNativeDriver: true })
+    ).start();
+    Animated.loop(
+      Animated.timing(btnSpin, { toValue: 1, duration: 900, easing: Easing.linear, useNativeDriver: true })
+    ).start();
     (async () => {
       try {
         const { user, token } = await loginUser(email.trim(), password);
-        onLogin && onLogin(user.email, token);
+        // micro animação de sucesso antes de navegar
+        setSuccess(true);
+        Animated.sequence([
+          Animated.timing(btnScale, { toValue: 0.98, duration: 120, easing: Easing.out(Easing.quad), useNativeDriver: true }),
+          Animated.spring(btnScale, { toValue: 1, useNativeDriver: true, tension: 140, friction: 8 }),
+        ]).start();
+        setTimeout(() => {
+          onLogin && onLogin(user.email, token);
+        }, 420);
       } catch (e: any) {
-        // Não mostrar Alert, apenas ignore
+        // exibe mensagem de erro amigável
+        const msg = e?.message || 'Credenciais inválidas. Verifique seu e-mail e senha.';
+        setErrorMsg(msg);
+        // shake no erro
+        errorShake.setValue(0);
+        Animated.sequence([
+          Animated.timing(errorShake, { toValue: 1, duration: 40, useNativeDriver: true }),
+          Animated.timing(errorShake, { toValue: -1, duration: 40, useNativeDriver: true }),
+          Animated.timing(errorShake, { toValue: 0.7, duration: 35, useNativeDriver: true }),
+          Animated.timing(errorShake, { toValue: -0.5, duration: 30, useNativeDriver: true }),
+          Animated.timing(errorShake, { toValue: 0, duration: 30, useNativeDriver: true }),
+        ]).start();
       } finally {
         setLoading(false);
       }
@@ -208,6 +250,13 @@ export default function LoginScreen({ onLogin, onRegister }: LoginScreenProps) {
               <Text style={styles.title}>Bem-vindo</Text>
               <Text style={styles.subtitle}>Entre para organizar seu universo</Text>
 
+              {errorMsg ? (
+                <View style={styles.errorBox}>
+                  <Ionicons name="alert-circle" size={18} color="#FF6B6B" style={{ marginRight: 8 }} />
+                  <Text style={styles.errorText}>{errorMsg}</Text>
+                </View>
+              ) : null}
+
               <View style={styles.fieldGroup}>
                 <Text style={styles.label}>E-mail</Text>
                 <TextInput
@@ -220,7 +269,10 @@ export default function LoginScreen({ onLogin, onRegister }: LoginScreenProps) {
                   autoCapitalize="none"
                   autoCorrect={false}
                   value={email}
-                  onChangeText={setEmail}
+                  onChangeText={(t) => {
+                    setEmail(t);
+                    if (errorMsg) setErrorMsg(null);
+                  }}
                   onSubmitEditing={() => passwordRef.current?.focus()}
                   blurOnSubmit={false}
                   importantForAutofill="yes"
@@ -240,7 +292,10 @@ export default function LoginScreen({ onLogin, onRegister }: LoginScreenProps) {
                     secureTextEntry={!showPassword}
                     returnKeyType="go"
                     value={password}
-                    onChangeText={setPassword}
+                    onChangeText={(t) => {
+                      setPassword(t);
+                      if (errorMsg) setErrorMsg(null);
+                    }}
                     onSubmitEditing={handleSubmit}
                     textContentType="password"
                     autoComplete="password"
@@ -264,8 +319,58 @@ export default function LoginScreen({ onLogin, onRegister }: LoginScreenProps) {
 
               <View style={{ height: 8 }} />
 
-              <Pressable onPress={handleSubmit} disabled={loading} style={({ pressed }) => [styles.primaryBtn, pressed && styles.btnPressed]}> 
-                <Text style={styles.primaryText}>{loading ? 'Entrando...' : 'Entrar'}</Text>
+              <Pressable
+                onPressIn={() => !loading && Animated.timing(btnScale, { toValue: 0.98, duration: 90, easing: Easing.out(Easing.quad), useNativeDriver: true }).start()}
+                onPressOut={() => Animated.spring(btnScale, { toValue: 1, useNativeDriver: true, tension: 140, friction: 10 }).start()}
+                onPress={handleSubmit}
+                disabled={loading}
+                style={({ pressed }) => [styles.primaryBtn, pressed && !loading && styles.btnPressed]}
+              > 
+                <Animated.View style={{ transform: [{ scale: btnScale }] }}>
+                  {/* conteúdo do botão */}
+                  <View style={styles.btnContentRow}>
+                    {!loading && !success ? (
+                      <Ionicons name="log-in" size={16} color="rgba(241,250,238,0.95)" style={{ marginRight: 8 }} />
+                    ) : null}
+
+                    {loading && !success ? (
+                      <Animated.View
+                        style={{
+                          transform: [
+                            {
+                              rotate: btnSpin.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '360deg'] }),
+                            },
+                          ],
+                          marginRight: 8,
+                        }}
+                      >
+                        <Ionicons name="sync" size={16} color="rgba(241,250,238,0.95)" />
+                      </Animated.View>
+                    ) : null}
+
+                    {success ? (
+                      <>
+                        <Ionicons name="checkmark-circle" size={18} color="#64DF64" style={{ marginRight: 8 }} />
+                        <Text style={styles.primaryText}>Pronto</Text>
+                      </>
+                    ) : (
+                      <Text style={styles.primaryText}>{loading ? 'Entrando...' : 'Entrar'}</Text>
+                    )}
+                  </View>
+
+                  {/* sheen animado sobre o botão enquanto loading */}
+                  {loading && (
+                    <Animated.View
+                      pointerEvents="none"
+                      style={[styles.btnSheen, {
+                        transform: [
+                          { rotateZ: '-15deg' },
+                          { translateX: btnSheen.interpolate({ inputRange: [0, 1], outputRange: [-80, 320] }) },
+                        ],
+                      }]}
+                    />
+                  )}
+                </Animated.View>
               </Pressable>
 
               <Pressable onPress={onRegister} style={({ pressed }) => [styles.secondaryBtn, pressed && styles.btnPressed]}> 
@@ -274,7 +379,14 @@ export default function LoginScreen({ onLogin, onRegister }: LoginScreenProps) {
             </BlurView>
           </Animated.View>
 
-          <Text style={styles.footerNote}>Squadly • Produtividade fora da órbita</Text>
+          <Animated.Text
+            style={[
+              styles.footerNote,
+              { transform: [{ translateX: errorShake.interpolate({ inputRange: [-1, 1], outputRange: [-6, 6] }) }] },
+            ]}
+          >
+            Squadly • Produtividade fora da órbita
+          </Animated.Text>
         </ScrollView>
       </View>
     </KeyboardAvoidingView>
@@ -343,6 +455,22 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     opacity: 0.9,
   },
+  errorBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255,107,107,0.12)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.16)',
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: 12,
+    marginBottom: 12,
+  },
+  errorText: {
+    color: '#FFD7D7',
+    fontSize: 13,
+    flex: 1,
+  },
   fieldGroup: { marginBottom: 14 },
   label: { color: 'rgba(241,250,238,0.8)', marginBottom: 6, fontSize: 12 },
   input: {
@@ -372,8 +500,21 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     borderRadius: 12,
     alignItems: 'center',
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.14)'
   },
   btnPressed: { opacity: 0.85 },
+  btnContentRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center' },
+  btnSheen: {
+    position: 'absolute',
+    top: -10,
+    left: -60,
+    width: 80,
+    height: 60,
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    borderRadius: 30,
+  },
   primaryText: { color: COLORS.white, fontWeight: '700', letterSpacing: 0.5 },
   secondaryBtn: { paddingVertical: 12, alignItems: 'center' },
   secondaryText: { color: COLORS.lilac, fontWeight: '600' },
