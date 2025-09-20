@@ -7,21 +7,39 @@ import Button from "@/components/Button";
 import Logo from "@/components/Logo";
 import { useState } from "react";
 import { motion } from "framer-motion";
+import { authApi } from "@/lib/api";
+import { useRouter } from "next/navigation";
 
 export default function RegisterPage() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const router = useRouter();
 
-  const submit = (e: React.FormEvent) => {
+  const submit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError(null);
     if (password !== confirm) {
-      alert("As senhas não conferem");
+      setError("As senhas não conferem");
       return;
     }
-    // TODO: integrar backend
-    alert(`Cadastro → ${name} | ${email}`);
+    setLoading(true);
+    try {
+      const res = await authApi.register(name, email, password);
+      if (res?.token) localStorage.setItem("token", res.token);
+      router.push("/splash");
+    } catch (err: unknown) {
+      function hasMessage(e: unknown): e is { message: string } {
+        return typeof e === "object" && e !== null && "message" in e && typeof (e as { message: unknown }).message === "string";
+      }
+      const message = hasMessage(err) ? err.message : "Falha no cadastro";
+      setError(message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -48,13 +66,20 @@ export default function RegisterPage() {
 
           <GlassCard className="overflow-hidden">
             <form onSubmit={submit} className="space-y-4">
+              {error && (
+                <div className="rounded-md border border-red-400/30 bg-red-500/10 text-red-200 px-3 py-2 text-sm">
+                  {error}
+                </div>
+              )}
               <Input label="Nome completo" placeholder="Seu nome" value={name} onChange={e => setName(e.currentTarget.value)} required />
               <Input label="E-mail" type="email" placeholder="voce@exemplo.com" value={email} onChange={e => setEmail(e.currentTarget.value)} autoComplete="email" required />
               <div className="grid sm:grid-cols-2 gap-4">
                 <Input label="Senha" type="password" placeholder="Crie uma senha" value={password} onChange={e => setPassword(e.currentTarget.value)} autoComplete="new-password" required />
                 <Input label="Confirmar senha" type="password" placeholder="Repita a senha" value={confirm} onChange={e => setConfirm(e.currentTarget.value)} autoComplete="new-password" required />
               </div>
-              <Button type="submit" className="w-full">Cadastrar</Button>
+              <Button type="submit" className="w-full" disabled={loading}>
+                {loading ? "Cadastrando..." : "Cadastrar"}
+              </Button>
             </form>
           </GlassCard>
 

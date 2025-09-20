@@ -7,15 +7,33 @@ import Button from "@/components/Button";
 import Logo from "@/components/Logo";
 import { useState } from "react";
 import { motion } from "framer-motion";
+import { authApi } from "@/lib/api";
+import { useRouter } from "next/navigation";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const router = useRouter();
 
-  const submit = (e: React.FormEvent) => {
+  const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // TODO: integrar backend
-    alert(`Login → ${email}`);
+    setError(null);
+    setLoading(true);
+    try {
+      const res = await authApi.login(email, password);
+      if (res?.token) localStorage.setItem("token", res.token);
+      router.push("/splash");
+    } catch (err: unknown) {
+      function hasMessage(e: unknown): e is { message: string } {
+        return typeof e === "object" && e !== null && "message" in e && typeof (e as { message: unknown }).message === "string";
+      }
+      const message = hasMessage(err) ? err.message : "Falha no login";
+      setError(message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -43,6 +61,11 @@ export default function LoginPage() {
 
           <GlassCard>
             <form onSubmit={submit} className="space-y-4">
+              {error && (
+                <div className="rounded-md border border-red-400/30 bg-red-500/10 text-red-200 px-3 py-2 text-sm">
+                  {error}
+                </div>
+              )}
               <Input
                 label="E-mail"
                 type="email"
@@ -61,7 +84,9 @@ export default function LoginPage() {
                 autoComplete="current-password"
                 required
               />
-              <Button type="submit" className="w-full">Entrar</Button>
+              <Button type="submit" className="w-full" disabled={loading}>
+                {loading ? "Entrando..." : "Entrar"}
+              </Button>
             </form>
           </GlassCard>
 
