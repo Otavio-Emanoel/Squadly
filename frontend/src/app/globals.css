@@ -1,26 +1,49 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Paleta espacial */
+  --background: #0b0d17;
+  --foreground: #f1faee;
+  --lilac: #a8a4ff;
+  --purple: #9d4edd;
+  --blue: #3d5a80;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
+/* Base */
+html, body { height: 100%; }
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+}
+
+/* Glow de texto */
+.text-glow {
+  text-shadow:
+    0 0 12px color-mix(in oklab, var(--lilac), transparent 70%),
+    0 0 24px color-mix(in oklab, var(--purple), transparent 75%);
+}
+
+/* Cartão de vidro */
+.glass {
+  background: color-mix(in oklab, white 8%, transparent);
+  border: 1px solid color-mix(in oklab, var(--lilac) 25%, transparent);
+  backdrop-filter: blur(20px);
+}
+
+/* Estrelas e nebulosas */
+@keyframes twinkle { 0%,100% { opacity: .25 } 50% { opacity: 1 } }
+@keyframes driftY { from { transform: translateY(0) } to { transform: translateY(-40px) } }
+
+.star {
+  position: absolute;
+  border-radius: 9999px;
+  background: radial-gradient(circle at 30% 30%, #fff, #fff0 60%);
+  box-shadow: 0 0 12px color-mix(in oklab, var(--lilac), transparent 70%);
+  opacity: .7;
+}
+
+.nebula {
+  position: absolute;
+  filter: blur(40px);
+  opacity: .12;
 }
