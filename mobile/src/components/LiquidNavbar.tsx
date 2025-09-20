@@ -132,6 +132,37 @@ export default function LiquidNavbar({
   const innerTranslateX = innerOrbX.interpolate({ inputRange: [0, 1], outputRange: [-12, 12] });
   const innerTranslateY = innerOrbY.interpolate({ inputRange: [0, 1], outputRange: [-9, 9] });
 
+  // Animação periódica do FAB (Saturno): giro horizontal e também na diagonal (45º)
+  const fabSpin = useRef(new Animated.Value(0)).current;
+  const fabTilt = useRef(new Animated.Value(0)).current; // 0 = sem tilt, 1 = 45º
+  useEffect(() => {
+    if (!hasFab) return;
+    const loop = Animated.loop(
+      Animated.sequence([
+        // Espera inicial
+        Animated.delay(2600),
+        // Giro horizontal
+        Animated.timing(fabTilt, { toValue: 0, duration: 0, useNativeDriver: true }),
+        Animated.timing(fabSpin, { toValue: 1, duration: 900, easing: Easing.inOut(Easing.cubic), useNativeDriver: true }),
+        Animated.timing(fabSpin, { toValue: 0, duration: 0, useNativeDriver: true }),
+        // Pequena pausa
+        Animated.delay(600),
+        // Giro na diagonal (tilt a 45º)
+        Animated.timing(fabTilt, { toValue: 1, duration: 200, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
+        Animated.timing(fabSpin, { toValue: 1, duration: 900, easing: Easing.inOut(Easing.cubic), useNativeDriver: true }),
+        Animated.timing(fabTilt, { toValue: 0, duration: 200, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
+        Animated.timing(fabSpin, { toValue: 0, duration: 0, useNativeDriver: true }),
+      ])
+    );
+    loop.start();
+    return () => {
+      // ao desmontar, o loop é interrompido pelo RN
+    };
+  }, [fabSpin, fabTilt, hasFab]);
+  const fabRotateY = fabSpin.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '360deg'] });
+  const fabRotateZ = fabTilt.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '45deg'] });
+  const fabScale = fabSpin.interpolate({ inputRange: [0, 0.5, 1], outputRange: [1, 0.95, 1] });
+
   const renderItem = (item: LiquidNavItem, index: number) => {
     const isActive = index === activeIndex;
     const scale = useRef(new Animated.Value(isActive ? 1 : 0.96)).current;
@@ -174,7 +205,7 @@ export default function LiquidNavbar({
   return (
     <View style={[styles.wrapper, style]}>
       {/* Barra de vidro */}
-      <BlurView onLayout={onLayoutBar} intensity={80} tint="dark" style={[styles.bar, { height }]}> 
+      <BlurView onLayout={onLayoutBar} intensity={80} tint="dark" style={[styles.bar, { height }]}>
         {/* Fundo levemente translúcido para reforçar vidro */}
         <View style={styles.barBg} />
 
@@ -182,7 +213,7 @@ export default function LiquidNavbar({
         <Animated.View style={[styles.sheen, { transform: [{ translateX: sheenTranslateX }] }]} />
 
         {/* Trilha dos itens (onde a bolha se move) */}
-        <View style={[styles.track, { paddingHorizontal: horizontalPadding }]}> 
+        <View style={[styles.track, { paddingHorizontal: horizontalPadding }]}>
           {/* Bolha "líquida" atrás do ativo */}
           {itemCount > 0 && (
             <Animated.View
@@ -224,7 +255,7 @@ export default function LiquidNavbar({
           )}
 
           {/* Itens */}
-          <View style={[styles.itemsRow, { width: Math.max(0, trackWidth) }]}> 
+          <View style={[styles.itemsRow, { width: Math.max(0, trackWidth) }]}>
             {items.map((it, idx) => renderItem(it, idx))}
           </View>
 
@@ -241,7 +272,9 @@ export default function LiquidNavbar({
             >
               <BlurView intensity={60} tint="dark" style={StyleSheet.absoluteFillObject} />
               <View style={styles.fabSheen} />
-              <Ionicons name={fabIconName!} size={24} color={COLORS.white} />
+              <Animated.View style={{ transform: [{ perspective: 600 }, { rotateZ: fabRotateZ }, { rotateY: fabRotateY }, { scale: fabScale }] }}>
+                <Ionicons name={fabIconName!} size={24} color={COLORS.white} />
+              </Animated.View>
             </Pressable>
           )}
         </View>

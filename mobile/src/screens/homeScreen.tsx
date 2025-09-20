@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Animated, Dimensions, Easing, Pressable, StyleSheet, Text, View, Alert, ScrollView } from 'react-native';
 import { BlurView } from 'expo-blur';
 import { getMe, User } from '../services/auth';
+import FeatureCards, { FeatureCardItem } from '../components/FeatureCards';
 import LiquidNavbar, { LiquidNavItem } from '../components/LiquidNavbar';
 
 const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
@@ -128,6 +129,29 @@ export default function HomeScreen({ token, onLogout }: HomeScreenProps) {
   const greet = user?.name ? `Olá, ${user.name.split(' ')[0]}!` : 'Olá, Explorador!';
   const subtitle = 'Pronto para organizar sua próxima missão?';
 
+  const features: FeatureCardItem[] = [
+    {
+      id: '1',
+      title: 'Convide sua tripulação',
+      subtitle: 'Traga colegas para colaborar com você',
+      percentBadge: 'NOVO',
+      image: require('../assets/icon.png'),
+      imageSide: 'right',
+      gradient: ['#6D5DF6', '#C86DD7'],
+      onPress: () => Alert.alert('Em breve', 'Convites de equipe em desenvolvimento.'),
+    },
+    {
+      id: '2',
+      title: 'Templates de Squads',
+      subtitle: 'Comece rápido com modelos prontos',
+      percentBadge: '🔥',
+      image: require('../assets/splash-icon.png'),
+      imageSide: 'left',
+      gradient: ['#64DFDF', '#9D4EDD'],
+      onPress: () => Alert.alert('Em breve', 'Templates em desenvolvimento.'),
+    },
+  ];
+
   return (
     <View style={styles.root}>
       {/* Estrelas */}
@@ -148,11 +172,11 @@ export default function HomeScreen({ token, onLogout }: HomeScreenProps) {
       ))}
 
       {/* Nebulosas para profundidade */}
-      <View style={[styles.nebula, { backgroundColor: COLORS.purple, top: SCREEN_H * 0.08, left: -90 }]} />
-      <View style={[styles.nebula, { backgroundColor: COLORS.blue, bottom: SCREEN_H * 0.12, right: -70 }]} />
+  <View pointerEvents="none" style={[styles.nebula, { backgroundColor: COLORS.purple, top: SCREEN_H * 0.08, left: -90 }]} />
+  <View pointerEvents="none" style={[styles.nebula, { backgroundColor: COLORS.blue, bottom: SCREEN_H * 0.12, right: -70 }]} />
 
       {/* Planeta decorativo */}
-      <Animated.View style={[styles.planet, { transform: [{ scale: planetScale }] }]}>
+      <Animated.View pointerEvents="none" style={[styles.planet, { transform: [{ scale: planetScale }] }]}>
         <View style={styles.planetCore} />
         <View style={styles.planetRing} />
       </Animated.View>
@@ -160,12 +184,14 @@ export default function HomeScreen({ token, onLogout }: HomeScreenProps) {
       {/* Cometa removido */}
 
       {/* Conteúdo principal */}
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+  <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <BlurView style={styles.headerCard} intensity={80} tint="dark">
           <View style={styles.glare} />
           <Text style={styles.headerTitle}>{greet}</Text>
           <Text style={styles.headerSubtitle}>{loading ? 'Carregando...' : error || subtitle}</Text>
         </BlurView>
+
+        <FeatureCards items={features} />
 
         <View style={styles.grid}>
           <ActionCard
@@ -273,7 +299,7 @@ const styles = StyleSheet.create({
   content: {
     padding: 20,
     paddingTop: 60,
-    paddingBottom: 40,
+    paddingBottom: 140, // espaço extra para não colidir com a navbar ao final
     gap: 16,
   },
   headerCard: {
