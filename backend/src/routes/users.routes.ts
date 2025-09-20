@@ -7,5 +7,6 @@ const userController = new UserController();
 
  userRouter.get('/', auth, (req: Request, res: Response) => userController.index(req, res));
 userRouter.post('/', (req: Request, res: Response) => userController.create(req, res));
+userRouter.patch('/me', auth, (req: Request, res: Response) => userController.updateMe(req, res));
 
 export { userRouter };

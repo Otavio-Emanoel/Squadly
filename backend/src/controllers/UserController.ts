@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { createUser, listUsers } from '../services/user.service';
+import { createUser, listUsers, updateProfile } from '../services/user.service';
 
 export class UserController {
   async index(req: Request, res: Response) {
@@ -25,6 +25,18 @@ export class UserController {
     } catch (err: any) {
       const status = err?.status || 500;
       return res.status(status).json({ message: err?.message || 'Erro ao criar usuário' });
+    }
+  }
+
+  async updateMe(req: Request, res: Response) {
+    try {
+      if (!req.user?.id) return res.status(401).json({ message: 'Não autorizado' });
+  const { username, icon, status, bio, links, phone, theme, level, xp } = req.body as any;
+  const updated = await updateProfile(req.user.id, { username, icon, status, bio, links, phone, theme, level, xp });
+      return res.json({ user: updated });
+    } catch (err: any) {
+      const status = err?.status || 500;
+      return res.status(status).json({ message: err?.message || 'Erro ao atualizar perfil' });
     }
   }
 }

@@ -19,12 +19,9 @@ Status comuns
 GET `/health`
 - Auth: não
 - Body: —
-- 200
-```json
 { "status": "ok", "env": "development" }
 ```
 
----
 
 ## Raiz da API
 GET `/api`
@@ -40,6 +37,49 @@ GET `/api`
 ## Ping
 GET `/api/ping`
 - Auth: não
+
+### Atualizar perfil do usuário logado
+PATCH `/api/users/me`
+- Auth: sim (Bearer token)
+- Body (qualquer combinação dos campos abaixo):
+```json
+{
+  "username": "seu_username_unico",
+  "icon": "rocket",
+  "status": "Explorando novas galáxias",
+  "bio": "Entusiasta de tecnologia e espaço.",
+  "links": {
+    "github": "https://github.com/seuuser",
+    "linkedin": "https://linkedin.com/in/seuuser",
+    "instagram": "https://instagram.com/seuuser",
+    "telegram": "https://t.me/seuuser",
+    "discord": "seuuser#1234",
+    "website": "https://seusite.com"
+  },
+  "phone": "+55 11 99999-9999"
+}
+```
+- Regras:
+  - `username` é único, min 3 chars, normalizado (minúsculo, sem acentos, apenas a-z 0-9 _ .)
+  - `status` até 140 caracteres
+  - `bio` até 280 caracteres
+  - `links` são strings livres (no futuro podemos validar formato/URL)
+  - `phone` armazenado como string (sem máscara fixa)
+  - `icon` é uma string livre (ex.: rocket, planet, star) — validações adicionais podem ser adicionadas depois
+  - `theme` (enum): earth, mars, saturn, jupiter, venus, mercury, neptune, uranus, pluto, moon, sun (default earth)
+  - `level` (number >= 1) e `xp` (number >= 0) — poderão ser atualizados por regras de engajamento
+- 200 (exemplo)
+```json
+{ "user": { "_id": "...", "name": "...", "email": "...", "username": "...", "icon": "rocket", "status": "..." } }
+```
+- 400
+```json
+{ "message": "username inválido" }
+```
+- 409
+```json
+{ "message": "username indisponível" }
+```
 - Body: —
 - 200
 ```json
