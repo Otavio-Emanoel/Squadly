@@ -12,9 +12,11 @@ import {
   TextInput,
   View,
   Keyboard,
+  Alert,
 } from 'react-native';
 import { BlurView } from 'expo-blur';
 import Ionicons from '@expo/vector-icons/Ionicons';
+import { loginUser } from '../services/auth';
 
 const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
 
@@ -154,10 +156,16 @@ export default function LoginScreen({ onLogin, onRegister }: LoginScreenProps) {
   const handleSubmit = useCallback(() => {
     if (loading) return;
     setLoading(true);
-    setTimeout(() => {
-      onLogin && onLogin(email.trim(), password);
-      setLoading(false);
-    }, 700);
+    (async () => {
+      try {
+        const { user, token } = await loginUser(email.trim(), password);
+        onLogin && onLogin(user.email, token);
+      } catch (e: any) {
+        Alert.alert('Falha no login', e?.message || 'Tente novamente');
+      } finally {
+        setLoading(false);
+      }
+    })();
   }, [email, loading, onLogin, password]);
 
   return (

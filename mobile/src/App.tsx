@@ -9,6 +9,7 @@ export default function App() {
   const [ready, setReady] = useState(false);
   const [logged, setLogged] = useState(false);
   const [authScreen, setAuthScreen] = useState<'login' | 'register'>('login');
+  const [token, setToken] = useState<string | null>(null);
 
   if (!ready) {
     return <SplashScreen onFinish={() => setReady(true)} />;
@@ -19,7 +20,8 @@ export default function App() {
       <>
         {authScreen === 'login' ? (
           <LoginScreen
-            onLogin={(email, _password) => {
+            onLogin={(email, tk) => {
+              setToken(tk);
               setLogged(true);
               Alert.alert('Bem-vindo!', `Logado como ${email}`);
             }}
@@ -28,8 +30,8 @@ export default function App() {
         ) : (
           <RegisterScreen
             onRegister={({ name, email }) => {
-              setLogged(true);
-              Alert.alert('Conta criada!', `Bem-vindo, ${name || email}!`);
+              setAuthScreen('login');
+              Alert.alert('Conta criada!', `Bem-vindo, ${name || email}! Faça login para continuar.`);
             }}
             onGoToLogin={() => setAuthScreen('login')}
           />

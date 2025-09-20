@@ -12,9 +12,11 @@ import {
   TextInput,
   View,
   Keyboard,
+  Alert,
 } from 'react-native';
 import { BlurView } from 'expo-blur';
 import Ionicons from '@expo/vector-icons/Ionicons';
+import { registerUser } from '../services/auth';
 
 const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
 
@@ -155,11 +157,21 @@ export default function RegisterScreen({ onRegister, onGoToLogin }: RegisterScre
 
   const handleSubmit = useCallback(() => {
     if (loading) return;
+    if (!name.trim() || !email.trim() || password.length < 6 || password !== confirmPassword) {
+      Alert.alert('Verifique os dados', 'Preencha todos os campos corretamente.');
+      return;
+    }
     setLoading(true);
-    setTimeout(() => {
-      onRegister && onRegister({ name: name.trim(), email: email.trim(), password, confirmPassword });
-      setLoading(false);
-    }, 700);
+    (async () => {
+      try {
+        const user = await registerUser({ name: name.trim(), email: email.trim(), password });
+        onRegister && onRegister({ name: user.name, email: user.email, password, confirmPassword });
+      } catch (e: any) {
+        Alert.alert('Falha no cadastro', e?.message || 'Tente novamente');
+      } finally {
+        setLoading(false);
+      }
+    })();
   }, [confirmPassword, email, loading, name, onRegister, password]);
 
   return (

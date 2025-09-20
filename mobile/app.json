@@ -25,6 +25,19 @@
     },
     "web": {
       "favicon": "./src/assets/favicon.png"
+    },
+    "extra": {
+      "expoClientId": "",
+      "eas": { "projectId": "" }
+    },
+    "experiments": {
+      "typedRoutes": false
+    },
+    "runtimeVersion": {
+      "policy": "sdkVersion"
+    },
+    "updates": {
+      "url": ""
     }
   }
 }
