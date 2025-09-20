@@ -18,6 +18,7 @@ import { BlurView } from 'expo-blur';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { registerUser } from '../services/auth';
 import { loginUser } from '../services/auth';
+import ConnectionBadge from '../components/ConnectionBadge';
 
 const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
 
@@ -180,6 +181,9 @@ export default function RegisterScreen({ onRegister, onGoToLogin }: RegisterScre
   return (
     <KeyboardAvoidingView style={styles.root} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <View style={styles.container}>
+        <View pointerEvents="box-none" style={styles.badgeWrap}>
+          <ConnectionBadge />
+        </View>
         {/* Estrelas em movimento (time-lapse) */}
         {stars.map((s, i) => (
           <Animated.View
@@ -332,6 +336,12 @@ export default function RegisterScreen({ onRegister, onGoToLogin }: RegisterScre
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: COLORS.bg },
   container: { flex: 1 },
+  badgeWrap: {
+    position: 'absolute',
+    top: 35,
+    right: 14,
+    zIndex: 50,
+  },
   nebula: {
     position: 'absolute',
     width: 320,

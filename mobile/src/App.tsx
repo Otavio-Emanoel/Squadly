@@ -5,12 +5,14 @@ import SplashScreen from './screens/splashScreen';
 import LoginScreen from './screens/loginScreen';
 import RegisterScreen from './screens/registerScreen';
 import HomeScreen from './screens/homeScreen';
+import KanbanScreen from './screens/kanbanScreen';
 
 export default function App() {
   const [ready, setReady] = useState(false);
   const [logged, setLogged] = useState(false);
   const [authScreen, setAuthScreen] = useState<'login' | 'register'>('login');
   const [token, setToken] = useState<string | null>(null);
+  const [screen, setScreen] = useState<'home' | 'kanban'>('home');
 
   if (!ready) {
     return <SplashScreen onFinish={() => setReady(true)} />;
@@ -43,13 +45,18 @@ export default function App() {
 
   return (
     <>
-      <HomeScreen
-        token={token!}
-        onLogout={() => {
-          setLogged(false);
-          setToken(null);
-        }}
-      />
+      {screen === 'home' ? (
+        <HomeScreen
+          token={token!}
+          onLogout={() => {
+            setLogged(false);
+            setToken(null);
+          }}
+          onOpenKanban={() => setScreen('kanban')}
+        />
+      ) : (
+        <KanbanScreen onBack={() => setScreen('home')} />
+      )}
       <StatusBar style="light" />
     </>
   );

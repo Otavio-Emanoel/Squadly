@@ -77,9 +77,10 @@ function useStarfield(total = 100) {
 export type HomeScreenProps = {
   token: string;
   onLogout?: () => void;
+  onOpenKanban?: () => void;
 };
 
-export default function HomeScreen({ token, onLogout }: HomeScreenProps) {
+export default function HomeScreen({ token, onLogout, onOpenKanban }: HomeScreenProps) {
   // Estado da aba ativa
   const [activeTab, setActiveTab] = useState(0);
   // Itens da navbar
@@ -132,13 +133,13 @@ export default function HomeScreen({ token, onLogout }: HomeScreenProps) {
   const features: FeatureCardItem[] = [
     {
       id: '1',
-      title: 'Convide sua tripulação',
-      subtitle: 'Traga colegas para colaborar com você',
+      title: 'Kanban',
+      subtitle: 'Visualize e arraste suas tarefas',
       percentBadge: 'NOVO',
       image: require('../assets/icon.png'),
       imageSide: 'right',
       gradient: ['#6D5DF6', '#C86DD7'],
-      onPress: () => Alert.alert('Em breve', 'Convites de equipe em desenvolvimento.'),
+      onPress: () => onOpenKanban?.(),
     },
     {
       id: '2',
@@ -220,6 +221,8 @@ export default function HomeScreen({ token, onLogout }: HomeScreenProps) {
         >
           <Text style={styles.logoutText}>Sair</Text>
         </Pressable>
+
+        {/* Botão extra removido: agora usamos o card "Kanban" acima */}
       </ScrollView>
 
       {/* Navbar fixa no rodapé, sobreposta */}
