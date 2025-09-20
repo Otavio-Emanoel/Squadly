@@ -159,7 +159,7 @@ export default function RegisterScreen({ onRegister, onGoToLogin }: RegisterScre
   const handleSubmit = useCallback(() => {
     if (loading) return;
     if (!name.trim() || !email.trim() || password.length < 6 || password !== confirmPassword) {
-      Alert.alert('Verifique os dados', 'Preencha todos os campos corretamente.');
+      // Não mostrar Alert, apenas não prosseguir
       return;
     }
     setLoading(true);
@@ -170,7 +170,7 @@ export default function RegisterScreen({ onRegister, onGoToLogin }: RegisterScre
         const { token, user: u } = await loginUser(email.trim(), password);
         onRegister && onRegister({ email: u.email, token, name: u.name });
       } catch (e: any) {
-        Alert.alert('Falha no cadastro', e?.message || 'Tente novamente');
+        // Não mostrar Alert, apenas ignore
       } finally {
         setLoading(false);
       }

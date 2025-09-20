@@ -161,7 +161,7 @@ export default function LoginScreen({ onLogin, onRegister }: LoginScreenProps) {
         const { user, token } = await loginUser(email.trim(), password);
         onLogin && onLogin(user.email, token);
       } catch (e: any) {
-        Alert.alert('Falha no login', e?.message || 'Tente novamente');
+        // Não mostrar Alert, apenas ignore
       } finally {
         setLoading(false);
       }

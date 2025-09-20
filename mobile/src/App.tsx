@@ -1,9 +1,10 @@
 import { StatusBar } from 'expo-status-bar';
 import React, { useState } from 'react';
-import { Alert, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import SplashScreen from './screens/splashScreen';
 import LoginScreen from './screens/loginScreen';
 import RegisterScreen from './screens/registerScreen';
+import HomeScreen from './screens/homeScreen';
 
 export default function App() {
   const [ready, setReady] = useState(false);
@@ -23,7 +24,6 @@ export default function App() {
             onLogin={(email, tk) => {
               setToken(tk);
               setLogged(true);
-              Alert.alert('Bem-vindo!', `Logado como ${email}`);
             }}
             onRegister={() => setAuthScreen('register')}
           />
@@ -32,7 +32,6 @@ export default function App() {
             onRegister={({ email, token }) => {
               setToken(token);
               setLogged(true);
-              Alert.alert('Conta criada!', `Bem-vindo, ${email}!`);
             }}
             onGoToLogin={() => setAuthScreen('login')}
           />
@@ -43,10 +42,16 @@ export default function App() {
   }
 
   return (
-    <View style={styles.container}>
-      {/* Conteúdo autenticado futuramente */}
+    <>
+      <HomeScreen
+        token={token!}
+        onLogout={() => {
+          setLogged(false);
+          setToken(null);
+        }}
+      />
       <StatusBar style="light" />
-    </View>
+    </>
   );
 }
 
@@ -54,7 +59,5 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#0B0D17',
-    alignItems: 'center',
-    justifyContent: 'center',
   },
 });

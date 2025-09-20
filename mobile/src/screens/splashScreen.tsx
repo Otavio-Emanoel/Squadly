@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef } from 'react';
-import { Animated, Dimensions, Easing, StyleSheet, Text, View } from 'react-native';
+import { Animated, Dimensions, Easing, StyleSheet, Text, View, Image } from 'react-native';
 
 const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
 
@@ -33,7 +33,8 @@ function useStars(count = 40) {
         y,
         size,
         color,
-        opacity: new Animated.Value(Math.random() * 0.6 + 0.2),
+        // começa invisível para um efeito de "surgir" em ondas
+        opacity: new Animated.Value(0),
         drift: new Animated.Value(0),
       });
     }
@@ -41,7 +42,7 @@ function useStars(count = 40) {
   }, [count]);
 
   useEffect(() => {
-    // Animações de cintilar e leve drift vertical
+    // Animações de cintilar e leve drift vertical, com atraso aleatório para ir "enchendo" o céu
     const loops = stars.map((s, idx) => {
       const twinkle = Animated.sequence([
         Animated.timing(s.opacity, {
@@ -76,9 +77,29 @@ function useStars(count = 40) {
       return [Animated.loop(twinkle), Animated.loop(drift)];
     });
 
-    const starters = loops.flat();
-    starters.forEach(a => a.start());
-    return () => starters.forEach(a => a.stop());
+    // Começo com um fade-in escalonado para cada estrela
+    const timers: Array<ReturnType<typeof setTimeout>> = [];
+    loops.forEach((pair, i) => {
+      const appearTo = 0.3 + Math.random() * 0.5; // opacidade inicial 0.3 - 0.8
+      const delay = 120 + Math.random() * 1200; // atraso aleatório
+      const t = setTimeout(() => {
+        Animated.timing(stars[i].opacity, {
+          toValue: appearTo,
+          duration: 420 + Math.random() * 520,
+          easing: Easing.out(Easing.cubic),
+          useNativeDriver: true,
+        }).start(() => {
+          pair[0].start();
+          pair[1].start();
+        });
+      }, delay);
+      timers.push(t);
+    });
+
+    return () => {
+      timers.forEach(clearTimeout);
+      loops.flat().forEach(a => a.stop());
+    };
   }, [stars]);
 
   return stars;
@@ -88,11 +109,9 @@ export default function SplashScreen({ onFinish }: { onFinish?: () => void }) {
   const containerOpacity = useRef(new Animated.Value(1)).current;
   const logoScale = useRef(new Animated.Value(0.8)).current;
   const logoGlow = useRef(new Animated.Value(0)).current;
-  const meteorX = useRef(new Animated.Value(-100)).current;
-  const meteorY = useRef(new Animated.Value(-50)).current;
-  const meteorOpacity = useRef(new Animated.Value(0)).current;
+  // Removido cometa
 
-  const stars = useStars(60);
+  const stars = useStars(90);
 
   useEffect(() => {
     // Animações de logo
@@ -123,26 +142,7 @@ export default function SplashScreen({ onFinish }: { onFinish?: () => void }) {
     pulse.start();
     glow.start();
 
-    // Meteoro ocasional
-    const runMeteor = () => {
-      meteorX.setValue(-120);
-      meteorY.setValue(Math.random() * (SCREEN_H * 0.3));
-      meteorOpacity.setValue(0);
-
-      Animated.sequence([
-        Animated.timing(meteorOpacity, { toValue: 1, duration: 200, useNativeDriver: true }),
-        Animated.parallel([
-          Animated.timing(meteorX, { toValue: SCREEN_W + 80, duration: 1200, easing: Easing.out(Easing.quad), useNativeDriver: true }),
-          Animated.timing(meteorY, { toValue: SCREEN_H * 0.6 + Math.random() * 60, duration: 1200, easing: Easing.inOut(Easing.quad), useNativeDriver: true }),
-        ]),
-        Animated.timing(meteorOpacity, { toValue: 0, duration: 200, useNativeDriver: true }),
-      ]).start(() => {
-        // agenda próximo
-        setTimeout(runMeteor, 1000 + Math.random() * 2000);
-      });
-    };
-
-    const meteorTimeout = setTimeout(runMeteor, 600);
+    // Cometa/meteoro removido
 
     // Sai da splash apos 2.8s com fade
     const exit = setTimeout(() => {
@@ -155,9 +155,9 @@ export default function SplashScreen({ onFinish }: { onFinish?: () => void }) {
       pulse.stop();
       glow.stop();
       clearTimeout(exit);
-      clearTimeout(meteorTimeout);
+      // sem cometa
     };
-  }, [containerOpacity, logoGlow, logoScale, meteorOpacity, meteorX, meteorY, onFinish]);
+  }, [containerOpacity, logoGlow, logoScale, onFinish]);
 
   return (
     <Animated.View style={[styles.container, { opacity: containerOpacity }]}> 
@@ -185,10 +185,7 @@ export default function SplashScreen({ onFinish }: { onFinish?: () => void }) {
 
       {/* Branding */}
       <Animated.View style={[styles.center, { transform: [{ scale: logoScale }] }]}> 
-        <Text style={styles.title}>Squadly</Text>
-        <Text style={styles.subtitle}>Organize seu universo</Text>
-
-        {/* brilho */}
+        {/* brilho ao fundo */}
         <Animated.View
           style={{
             position: 'absolute',
@@ -199,26 +196,15 @@ export default function SplashScreen({ onFinish }: { onFinish?: () => void }) {
             opacity: logoGlow.interpolate({ inputRange: [0, 1], outputRange: [0.06, 0.14] }),
           }}
         />
+
+        {/* logo */}
+  <Image source={require('../assets/splash-icon.png')} style={styles.logo} resizeMode="contain" />
+
+        <Text style={styles.title}>Squadly</Text>
+        <Text style={styles.subtitle}>Organize seu universo</Text>
       </Animated.View>
 
-      {/* Meteoro */}
-      <Animated.View
-        style={{
-          position: 'absolute',
-          width: 120,
-          height: 2,
-          borderRadius: 2,
-          backgroundColor: COLORS.white,
-          opacity: meteorOpacity,
-          transform: [
-            { translateX: meteorX },
-            { translateY: meteorY },
-            { rotateZ: '-20deg' },
-          ],
-        }}
-      >
-        <View style={{ width: 18, height: 18, borderRadius: 9, backgroundColor: COLORS.white, position: 'absolute', left: -2, top: -8 }} />
-      </Animated.View>
+      {/* Cometa removido */}
 
       {/* Rodapé */}
       <Text style={styles.caption}>Carregando...</Text>
@@ -266,5 +252,14 @@ const styles = StyleSheet.create({
     color: COLORS.white,
     opacity: 0.6,
     fontSize: 12,
+  },
+  logo: {
+    width: 120,
+    height: 120,
+    marginBottom: 12,
+    borderRadius: 28,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.12)',
+    backgroundColor: 'rgba(255,255,255,0.02)',
   },
 });

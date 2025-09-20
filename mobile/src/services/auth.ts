@@ -20,3 +20,10 @@ export async function loginUser(email: string, password: string) {
     json: { email, password },
   });
 }
+
+export async function getMe(token: string) {
+  return api<{ user: User }>('/api/auth/me', {
+    method: 'GET',
+    authToken: token,
+  });
+}
