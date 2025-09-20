@@ -1,7 +1,9 @@
 import React, { useMemo } from 'react';
-import { Dimensions, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Dimensions, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { BlurView } from 'expo-blur';
+import ConnectionBadge from '../components/ConnectionBadge';
 import KanbanCard from '../components/KanbanCard';
+import Ionicons from '@expo/vector-icons/Ionicons';
 
 const { width: SCREEN_W } = Dimensions.get('window');
 
@@ -50,6 +52,18 @@ export default function KanbanScreen({ onBack }: KanbanScreenProps) {
 
   return (
     <View style={styles.root}>
+      {/* Header com voltar + status de conexão */}
+      <View style={styles.headerWrap}>
+        <BlurView intensity={80} tint="dark" style={styles.header}>
+          <Pressable onPress={onBack} style={({ pressed }) => [styles.backBtn, pressed && { opacity: 0.85 }]}>
+            <Ionicons name="chevron-back" size={20} color="rgba(241,250,238,0.95)" />
+            <Text style={styles.backText}>Voltar</Text>
+          </Pressable>
+          <Text style={styles.headerTitle}>Kanban</Text>
+          <ConnectionBadge />
+        </BlurView>
+      </View>
+
       <ScrollView
         horizontal
         contentContainerStyle={styles.board}
@@ -61,6 +75,9 @@ export default function KanbanScreen({ onBack }: KanbanScreenProps) {
               <View style={styles.colHeader}>
                 <View style={[styles.colDot, { backgroundColor: c.color }]} />
                 <Text style={styles.colTitle}>{c.title}</Text>
+                <View style={styles.countPill}>
+                  <Text style={styles.countText}>{columns.tasks[c.key].length}</Text>
+                </View>
               </View>
               <ScrollView contentContainerStyle={styles.cardsList} showsVerticalScrollIndicator={false}>
                 {columns.tasks[c.key].map((t) => (
@@ -84,13 +101,41 @@ export default function KanbanScreen({ onBack }: KanbanScreenProps) {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: COLORS.bg, paddingVertical: 14 },
+  root: { flex: 1, backgroundColor: COLORS.bg },
+  headerWrap: {
+    paddingTop: 35, // afastar da status bar conforme pedido
+    paddingHorizontal: 14,
+    marginBottom: 10,
+  },
+  header: {
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 10,
+  },
+  backBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 6,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.12)'
+  },
+  backText: { color: COLORS.white, fontWeight: '700' },
+  headerTitle: { color: COLORS.white, fontWeight: '800', fontSize: 16 },
   board: {
     paddingHorizontal: 14,
     gap: 14,
   },
   columnWrap: {
-    width: SCREEN_W * 0.8,
+    width: SCREEN_W * 0.82,
   },
   column: {
     borderRadius: 16,
@@ -115,6 +160,15 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     fontSize: 18,
   },
+  countPill: {
+    marginLeft: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.12)'
+  },
+  countText: { color: COLORS.white, fontWeight: '700', fontSize: 12 },
   cardsList: {
     gap: 10,
     paddingBottom: 20,

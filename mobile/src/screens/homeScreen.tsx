@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Animated, Dimensions, Easing, Pressable, StyleSheet, Text, View, Alert, ScrollView } from 'react-native';
 import { BlurView } from 'expo-blur';
+import ConnectionBadge from '../components/ConnectionBadge';
 import { getMe, User } from '../services/auth';
 import FeatureCards, { FeatureCardItem } from '../components/FeatureCards';
 import LiquidNavbar, { LiquidNavItem } from '../components/LiquidNavbar';
@@ -136,7 +137,7 @@ export default function HomeScreen({ token, onLogout, onOpenKanban }: HomeScreen
       title: 'Kanban',
       subtitle: 'Visualize e arraste suas tarefas',
       percentBadge: 'NOVO',
-      image: require('../assets/icon.png'),
+      image: require('../assets/kanban.png'),
       imageSide: 'right',
       gradient: ['#6D5DF6', '#C86DD7'],
       onPress: () => onOpenKanban?.(),
@@ -155,6 +156,9 @@ export default function HomeScreen({ token, onLogout, onOpenKanban }: HomeScreen
 
   return (
     <View style={styles.root}>
+      <View pointerEvents="box-none" style={styles.badgeWrap}>
+        <ConnectionBadge />
+      </View>
       {/* Estrelas */}
       {stars.map((s, i) => (
         <Animated.View
@@ -255,6 +259,12 @@ function ActionCard({ title, description, onPress, color }: { title: string; des
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: COLORS.bg },
+  badgeWrap: {
+    position: 'absolute',
+    top: 35,
+    right: 14,
+    zIndex: 50,
+  },
   navbarWrap: {
     position: 'absolute',
     left: 0,
