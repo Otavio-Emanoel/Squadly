@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { createUser, listUsers, updateProfile } from '../services/user.service';
+import { createUser, listUsers, updateProfile, getPublicProfileByUsername } from '../services/user.service';
 
 export class UserController {
   async index(req: Request, res: Response) {
@@ -37,6 +37,19 @@ export class UserController {
     } catch (err: any) {
       const status = err?.status || 500;
       return res.status(status).json({ message: err?.message || 'Erro ao atualizar perfil' });
+    }
+  }
+
+  async showProfile(req: Request, res: Response) {
+    try {
+      const { username } = req.params as { username?: string };
+      if (!username || !username.trim()) return res.status(400).json({ message: 'username é obrigatório' });
+      const profile = await getPublicProfileByUsername(username);
+      if (!profile) return res.status(404).json({ message: 'Usuário não encontrado' });
+      return res.json({ user: profile });
+    } catch (err: any) {
+      const status = err?.status || 500;
+      return res.status(status).json({ message: err?.message || 'Erro ao buscar perfil' });
     }
   }
 }

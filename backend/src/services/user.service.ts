@@ -156,3 +156,48 @@ export async function updateProfile(userId: string, input: UpdateProfileInput) {
   }
   return user;
 }
+
+export type PublicProfile = Pick<
+  Awaited<ReturnType<typeof User.findOne>>,
+  never
+> & {
+  _id: string;
+  name: string;
+  username: string;
+  icon: string;
+  status: string;
+  bio: string;
+  links: {
+    github?: string;
+    linkedin?: string;
+    instagram?: string;
+    telegram?: string;
+    discord?: string;
+    website?: string;
+  };
+  theme:
+    | 'earth'
+    | 'mars'
+    | 'saturn'
+    | 'jupiter'
+    | 'venus'
+    | 'mercury'
+    | 'neptune'
+    | 'uranus'
+    | 'pluto'
+    | 'moon'
+    | 'sun';
+  level: number;
+  xp: number;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
+export async function getPublicProfileByUsername(username: string): Promise<PublicProfile | null> {
+  const doc = await User.findOne({ username: username.toLowerCase().trim() })
+    .select(
+      '_id name username icon status bio links theme level xp createdAt updatedAt' as any,
+    )
+    .lean();
+  return (doc as any) ?? null;
+}

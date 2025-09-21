@@ -114,6 +114,37 @@ GET `/api/users`
 { "message": "Não autorizado" }
 ```
 
+### Ver perfil público por username
+GET `/api/users/:username`
+- Auth: não
+- Params:
+  - `username` (string) — o identificador público do usuário (minúsculo)
+- 200 (exemplo)
+```json
+{
+  "user": {
+    "_id": "665f1e2b4c...",
+    "name": "Ada Lovelace",
+    "username": "ada",
+    "icon": "rocket",
+    "status": "Explorando novas galáxias",
+    "bio": "Entusiasta de tecnologia e espaço.",
+    "links": {
+      "github": "https://github.com/ada"
+    },
+    "theme": "earth",
+    "level": 3,
+    "xp": 420,
+    "createdAt": "2025-09-19T12:00:00.000Z",
+    "updatedAt": "2025-09-19T12:00:00.000Z"
+  }
+}
+```
+- 404
+```json
+{ "message": "Usuário não encontrado" }
+```
+
 ### Cadastrar usuário
 POST `/api/users`
 - Auth: não
