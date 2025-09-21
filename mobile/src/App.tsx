@@ -7,6 +7,7 @@ import RegisterScreen from './screens/registerScreen';
 import HomeScreen from './screens/homeScreen';
 import KanbanScreen from './screens/kanbanScreen';
 import ProfileScreen from './screens/profileScreen';
+import ProfileEditScreen from './screens/profileEditScreen';
 import LiquidNavbar, { LiquidNavItem } from './components/LiquidNavbar';
 import { Alert, Animated, Easing } from 'react-native';
 
@@ -15,7 +16,7 @@ export default function App() {
   const [logged, setLogged] = useState(false);
   const [authScreen, setAuthScreen] = useState<'login' | 'register'>('login');
   const [token, setToken] = useState<string | null>(null);
-  const [screen, setScreen] = useState<'home' | 'kanban' | 'profile'>('home');
+  const [screen, setScreen] = useState<'home' | 'kanban' | 'profile' | 'profileEdit'>('home');
   // Navbar persistente
   const navItems: LiquidNavItem[] = [
     { key: 'home', label: 'Home', icon: 'home' },
@@ -77,8 +78,10 @@ export default function App() {
         />
       ) : screen === 'kanban' ? (
         <KanbanScreen onBack={() => setScreen('home')} />
+      ) : screen === 'profile' ? (
+        <ProfileScreen token={token!} onEditProfile={() => setScreen('profileEdit')} />
       ) : (
-        <ProfileScreen token={token!} onGoHome={() => { setActiveTab(0); setScreen('home'); }} />
+        <ProfileEditScreen token={token!} onBack={() => setScreen('profile')} onSaved={() => setScreen('profile')} />
       )}
       {/* Navbar persistente (sempre visível) */}
       {logged && screen !== 'kanban' && (
