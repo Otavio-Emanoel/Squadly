@@ -96,9 +96,10 @@ function useStarfield(total = 70) {
 export type LoginScreenProps = {
   onLogin?: (email: string, password: string) => void;
   onRegister?: () => void;
+  onOpenSpaceStack?: () => void;
 };
 
-export default function LoginScreen({ onLogin, onRegister }: LoginScreenProps) {
+export default function LoginScreen({ onLogin, onRegister, onOpenSpaceStack }: LoginScreenProps) {
   const stars = useStarfield(85);
 
   const [email, setEmail] = useState('');
@@ -242,7 +243,7 @@ export default function LoginScreen({ onLogin, onRegister }: LoginScreenProps) {
           <Animated.View style={[
             styles.cardOuter,
             { opacity: cardOpacity, transform: [{ scale: scaleIn }, { translateY: cardLift }, { scale: cardScale }] },
-          ]}> 
+          ]}>
             <BlurView style={styles.blur} intensity={80} tint="dark">
               {/* brilho/glare */}
               <View style={styles.glare} />
@@ -325,7 +326,7 @@ export default function LoginScreen({ onLogin, onRegister }: LoginScreenProps) {
                 onPress={handleSubmit}
                 disabled={loading}
                 style={({ pressed }) => [styles.primaryBtn, pressed && !loading && styles.btnPressed]}
-              > 
+              >
                 <Animated.View style={{ transform: [{ scale: btnScale }] }}>
                   {/* conteúdo do botão */}
                   <View style={styles.btnContentRow}>
@@ -373,7 +374,7 @@ export default function LoginScreen({ onLogin, onRegister }: LoginScreenProps) {
                 </Animated.View>
               </Pressable>
 
-              <Pressable onPress={onRegister} style={({ pressed }) => [styles.secondaryBtn, pressed && styles.btnPressed]}> 
+              <Pressable onPress={onRegister} style={({ pressed }) => [styles.secondaryBtn, pressed && styles.btnPressed]}>
                 <Text style={styles.secondaryText}>Criar conta</Text>
               </Pressable>
             </BlurView>
@@ -388,6 +389,20 @@ export default function LoginScreen({ onLogin, onRegister }: LoginScreenProps) {
             Squadly • Produtividade fora da órbita
           </Animated.Text>
         </ScrollView>
+
+        {/* Botãozinho para abrir SpaceStack (canto inferior direito) */}
+        {onOpenSpaceStack ? (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Abrir SpaceStack"
+            onPress={onOpenSpaceStack}
+            style={({ pressed }) => [styles.miniFab, pressed && { opacity: 0.85 }]}
+          >
+            <BlurView intensity={80} tint="dark" style={styles.miniFabBlur}>
+              <Ionicons name="planet" size={16} color="rgba(241,250,238,0.95)" />
+            </BlurView>
+          </Pressable>
+        ) : null}
       </View>
     </KeyboardAvoidingView>
   );
@@ -519,4 +534,28 @@ const styles = StyleSheet.create({
   secondaryBtn: { paddingVertical: 12, alignItems: 'center' },
   secondaryText: { color: COLORS.lilac, fontWeight: '600' },
   footerNote: { textAlign: 'center', color: 'rgba(241,250,238,0.55)', marginTop: 18, fontSize: 12 },
+  miniFab: {
+    position: 'absolute',
+    left: 20,
+    bottom: 10,
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.14)',
+    shadowColor: '#000',
+    shadowOpacity: 0.35,
+    shadowOffset: { width: 0, height: 4 },
+    shadowRadius: 8,
+    elevation: 6,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(255,255,255,0.06)'
+  },
+  miniFabBlur: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
 });

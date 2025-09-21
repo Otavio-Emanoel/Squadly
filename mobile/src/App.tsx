@@ -8,15 +8,17 @@ import HomeScreen from './screens/homeScreen';
 import KanbanScreen from './screens/kanbanScreen';
 import ProfileScreen from './screens/profileScreen';
 import ProfileEditScreen from './screens/profileEditScreen';
+import SpaceStackScreen from './screens/spaceStackScreen';
 import LiquidNavbar, { LiquidNavItem } from './components/LiquidNavbar';
 import { Alert, Animated, Easing } from 'react-native';
 
 export default function App() {
   const [ready, setReady] = useState(false);
   const [logged, setLogged] = useState(false);
+  const [previewSpaceStack, setPreviewSpaceStack] = useState(false);
   const [authScreen, setAuthScreen] = useState<'login' | 'register'>('login');
   const [token, setToken] = useState<string | null>(null);
-  const [screen, setScreen] = useState<'home' | 'kanban' | 'profile' | 'profileEdit'>('home');
+  const [screen, setScreen] = useState<'home' | 'kanban' | 'profile' | 'profileEdit' | 'spaceStack'>('home');
   // Navbar persistente
   const navItems: LiquidNavItem[] = [
     { key: 'home', label: 'Home', icon: 'home' },
@@ -37,6 +39,15 @@ export default function App() {
   }
 
   if (!logged) {
+    // Permite abrir o SpaceStack em modo "preview" sem login
+    if (previewSpaceStack) {
+      return (
+        <>
+          <SpaceStackScreen onBack={() => setPreviewSpaceStack(false)} />
+          <StatusBar style="light" />
+        </>
+      );
+    }
     return (
       <>
         {authScreen === 'login' ? (
@@ -46,6 +57,7 @@ export default function App() {
               setLogged(true);
             }}
             onRegister={() => setAuthScreen('register')}
+            onOpenSpaceStack={() => setPreviewSpaceStack(true)}
           />
         ) : (
           <RegisterScreen
@@ -75,9 +87,12 @@ export default function App() {
             setActiveTab(3);
             setScreen('profile');
           }}
+          onOpenSpaceStack={() => setScreen('spaceStack')}
         />
       ) : screen === 'kanban' ? (
         <KanbanScreen onBack={() => setScreen('home')} />
+      ) : screen === 'spaceStack' ? (
+        <SpaceStackScreen onBack={() => setScreen('home')} />
       ) : screen === 'profile' ? (
         <ProfileScreen
           token={token!}
@@ -91,7 +106,7 @@ export default function App() {
         <ProfileEditScreen token={token!} onBack={() => setScreen('profile')} onSaved={() => setScreen('profile')} />
       )}
       {/* Navbar persistente (sempre visível) */}
-      {logged && screen !== 'kanban' && (
+      {logged && screen !== 'kanban' && screen !== 'spaceStack' && (
         <Animated.View
           style={{ position: 'absolute', left: 16, right: 16, bottom: 18, opacity: animNavbar, transform: [{ translateY: animNavbar.interpolate({ inputRange: [0,1], outputRange: [20,0] }) }] }}
           pointerEvents="box-none"

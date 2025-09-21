@@ -79,9 +79,10 @@ export type HomeScreenProps = {
   onLogout?: () => void;
   onOpenKanban?: () => void;
   onOpenProfile?: () => void;
+  onOpenSpaceStack?: () => void;
 };
 
-export default function HomeScreen({ token, onLogout, onOpenKanban, onOpenProfile }: HomeScreenProps) {
+export default function HomeScreen({ token, onLogout, onOpenKanban, onOpenProfile, onOpenSpaceStack }: HomeScreenProps) {
   const stars = useStarfield(110);
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
@@ -189,11 +190,11 @@ export default function HomeScreen({ token, onLogout, onOpenKanban, onOpenProfil
       id: '2',
       title: 'Space Stack',
       subtitle: 'Mini game de de puzzle espacial',
-      percentBadge: 'EM BREVE',
+      percentBadge: 'NOVIDADE',
       image: require('../assets/spacestack.png'),
       imageSide: 'left',
       gradient: ['#64DFDF', '#3D5A80'],
-      onPress: () => Alert.alert('Em breve', 'Jogo de blocos em desenvolvimento.'),
+      onPress: () => leaveAndNavigate(() => onOpenSpaceStack?.()),
     },
     {
       id: '3',
