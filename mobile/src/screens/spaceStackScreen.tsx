@@ -577,7 +577,9 @@ export default function SpaceStackScreen({ onBack }: SpaceStackScreenProps) {
   }, [used, board, size])
 
   // checar game over (nenhuma peça cabe)
+  // Delay para evitar flicker do game over ao colocar a última peça
   useEffect(() => {
+    let timeout: NodeJS.Timeout | null = null
     const anyFits = pieces.some((p, idx) => {
       if (used[idx]) return false
       for (let r = 0; r < size; r++) {
@@ -587,7 +589,14 @@ export default function SpaceStackScreen({ onBack }: SpaceStackScreenProps) {
       }
       return false
     })
-    setGameOver(!anyFits)
+    if (!anyFits) {
+      timeout = setTimeout(() => setGameOver(true), 400)
+    } else {
+      setGameOver(false)
+    }
+    return () => {
+      if (timeout) clearTimeout(timeout)
+    }
   }, [pieces, used, board, canPlace, size])
 
   const reset = () => {
@@ -726,46 +735,7 @@ export default function SpaceStackScreen({ onBack }: SpaceStackScreenProps) {
             </View>
           ))}
 
-          {/* Overlay de preview durante o drag */}
-          {dragging &&
-            dragIndex != null &&
-            hoverCell &&
-            (() => {
-              const p = pieces[dragIndex]
-              if (!p) return null
-              const pColor = getColorByIndex(pieceColors[dragIndex] || 1)
-              const fits = canPlace(p, hoverCell.r, hoverCell.c)
-              return (
-                <View pointerEvents="none" style={{ position: "absolute", left: 0, top: 0 }}>
-                  {p.map((row, i) => (
-                    <View
-                      key={i}
-                      style={{ position: "absolute", left: hoverCell.c * cellSize, top: (hoverCell.r + i) * cellSize }}
-                    >
-                      {row.map((v, j) =>
-                        v ? (
-                          <View
-                            key={j}
-                            style={{
-                              position: "absolute",
-                              left: j * cellSize,
-                              top: 0,
-                              width: cellSize,
-                              height: cellSize,
-                              backgroundColor: fits ? hexToRgba(pColor, 0.35) : "rgba(221,64,64,0.35)",
-                              borderRadius: 2,
-                              borderRightWidth: 1,
-                              borderBottomWidth: 1,
-                              borderColor: hexToRgba(THEME.white, 0.07),
-                            }}
-                          />
-                        ) : null,
-                      )}
-                    </View>
-                  ))}
-                </View>
-              )
-            })()}
+          {/* Overlay de preview durante o drag removido para teste */}
 
           {/* Explosões ao limpar: faíscas, anel e brilho varrendo linhas/colunas */}
           {(clearingCells.length > 0 || clearingRows.length > 0 || clearingCols.length > 0) && (
