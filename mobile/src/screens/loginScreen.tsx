@@ -18,16 +18,11 @@ import { BlurView } from 'expo-blur';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { loginUser } from '../services/auth';
 import ConnectionBadge from '../components/ConnectionBadge';
+import { useTheme } from '../theme/ThemeContext';
 
 const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
 
-const COLORS = {
-  bg: '#0B0D17',
-  white: '#F1FAEE',
-  lilac: '#A8A4FF',
-  purple: '#9D4EDD',
-  blue: '#3D5A80',
-};
+// Cores virão do tema
 
 type Star = {
   x: Animated.Value;
@@ -38,7 +33,7 @@ type Star = {
   opacity: number;
 };
 
-function useStarfield(total = 70) {
+function useStarfield(total = 70, COLORS: any) {
   const layers = useMemo(() => {
     const stars: Star[] = [];
     for (let i = 0; i < total; i++) {
@@ -58,7 +53,7 @@ function useStarfield(total = 70) {
       });
     }
     return stars;
-  }, [total]);
+  }, [total, COLORS]);
 
   useEffect(() => {
     const anims = layers.map((s) => {
@@ -100,7 +95,8 @@ export type LoginScreenProps = {
 };
 
 export default function LoginScreen({ onLogin, onRegister, onOpenSpaceStack }: LoginScreenProps) {
-  const stars = useStarfield(85);
+  const { colors: COLORS } = useTheme();
+  const stars = useStarfield(85, COLORS);
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -212,6 +208,8 @@ export default function LoginScreen({ onLogin, onRegister, onOpenSpaceStack }: L
     })();
   }, [email, loading, onLogin, password]);
 
+  const styles = React.useMemo(() => StyleSheet.create(makeStyles(COLORS)), [COLORS]);
+
   return (
     <KeyboardAvoidingView style={styles.root} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <View style={styles.container}>
@@ -236,8 +234,8 @@ export default function LoginScreen({ onLogin, onRegister, onOpenSpaceStack }: L
         ))}
 
         {/* Nebulosas suaves para profundidade */}
-        <View style={[styles.nebula, { backgroundColor: COLORS.purple, top: SCREEN_H * 0.1, left: -80 }]} />
-        <View style={[styles.nebula, { backgroundColor: COLORS.blue, bottom: SCREEN_H * 0.08, right: -60 }]} />
+  <View style={[styles.nebula, { backgroundColor: COLORS.purple, top: SCREEN_H * 0.1, left: -80 }]} />
+  <View style={[styles.nebula, { backgroundColor: COLORS.blue, bottom: SCREEN_H * 0.08, right: -60 }]} />
 
         <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
           <Animated.View style={[
@@ -262,7 +260,6 @@ export default function LoginScreen({ onLogin, onRegister, onOpenSpaceStack }: L
                 <Text style={styles.label}>E-mail</Text>
                 <TextInput
                   ref={emailRef}
-                  style={styles.input}
                   placeholder="seu@email.com"
                   placeholderTextColor="rgba(241,250,238,0.5)"
                   keyboardType="email-address"
@@ -279,6 +276,7 @@ export default function LoginScreen({ onLogin, onRegister, onOpenSpaceStack }: L
                   importantForAutofill="yes"
                   textContentType="emailAddress"
                   autoComplete="email"
+                  style={styles.input}
                 />
               </View>
 
@@ -408,154 +406,156 @@ export default function LoginScreen({ onLogin, onRegister, onOpenSpaceStack }: L
   );
 }
 
-const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: COLORS.bg },
-  container: { flex: 1 },
-  badgeWrap: {
-    position: 'absolute',
-    top: 35,
-    right: 14,
-    zIndex: 50,
-  },
-  nebula: {
-    position: 'absolute',
-    width: 320,
-    height: 320,
-    borderRadius: 160,
-    opacity: 0.08,
-  },
-  scrollContent: {
-    flexGrow: 1,
-    justifyContent: 'center',
-    paddingHorizontal: 24,
-    paddingVertical: 32,
-  },
-  cardOuter: {
-    borderColor: 'rgba(255,255,255,0.18)',
-    borderWidth: 1,
-    borderRadius: 20,
-    overflow: 'hidden',
-    // sombras
-    shadowColor: '#000',
-    shadowOpacity: 0.35,
-    shadowOffset: { width: 0, height: 12 },
-    shadowRadius: 24,
-    elevation: 12,
-  },
-  blur: {
-    padding: 20,
-    backgroundColor: 'rgba(255,255,255,0.03)', // leve filme para reforçar vidro
-  },
-  glare: {
-    position: 'absolute',
-    top: -60,
-    left: -40,
-    width: 220,
-    height: 140,
-    borderRadius: 80,
-    backgroundColor: COLORS.white,
-    opacity: 0.06,
-    transform: [{ rotateZ: '-15deg' }],
-  },
-  title: {
-    color: COLORS.white,
-    fontSize: 28,
-    fontWeight: '800',
-    letterSpacing: 0.5,
-  },
-  subtitle: {
-    color: COLORS.lilac,
-    fontSize: 13,
-    marginTop: 4,
-    marginBottom: 16,
-    opacity: 0.9,
-  },
-  errorBox: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(255,107,107,0.12)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.16)',
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    borderRadius: 12,
-    marginBottom: 12,
-  },
-  errorText: {
-    color: '#FFD7D7',
-    fontSize: 13,
-    flex: 1,
-  },
-  fieldGroup: { marginBottom: 14 },
-  label: { color: 'rgba(241,250,238,0.8)', marginBottom: 6, fontSize: 12 },
-  input: {
-    backgroundColor: 'rgba(11,13,23,0.5)',
-    borderColor: 'rgba(255,255,255,0.14)',
-    borderWidth: 1,
-    color: COLORS.white,
-    paddingHorizontal: 14,
-    paddingVertical: Platform.select({ ios: 14, android: 10, default: 12 }),
-    borderRadius: 12,
-    fontSize: 14,
-  },
-  passwordRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  eyeBtn: {
-    position: 'absolute',
-    right: 10,
-    height: Platform.select({ ios: 44, android: 40, default: 42 }),
-    width: 32,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  primaryBtn: {
-    backgroundColor: COLORS.blue,
-    paddingVertical: 14,
-    borderRadius: 12,
-    alignItems: 'center',
-    overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.14)'
-  },
-  btnPressed: { opacity: 0.85 },
-  btnContentRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center' },
-  btnSheen: {
-    position: 'absolute',
-    top: -10,
-    left: -60,
-    width: 80,
-    height: 60,
-    backgroundColor: 'rgba(255,255,255,0.15)',
-    borderRadius: 30,
-  },
-  primaryText: { color: COLORS.white, fontWeight: '700', letterSpacing: 0.5 },
-  secondaryBtn: { paddingVertical: 12, alignItems: 'center' },
-  secondaryText: { color: COLORS.lilac, fontWeight: '600' },
-  footerNote: { textAlign: 'center', color: 'rgba(241,250,238,0.55)', marginTop: 18, fontSize: 12 },
-  miniFab: {
-    position: 'absolute',
-    left: 20,
-    bottom: 10,
-    width: 34,
-    height: 34,
-    borderRadius: 17,
-    overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.14)',
-    shadowColor: '#000',
-    shadowOpacity: 0.35,
-    shadowOffset: { width: 0, height: 4 },
-    shadowRadius: 8,
-    elevation: 6,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'rgba(255,255,255,0.06)'
-  },
-  miniFabBlur: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-});
+function makeStyles(COLORS: any) {
+  return {
+    root: { flex: 1, backgroundColor: COLORS.bg },
+    container: { flex: 1 },
+    badgeWrap: {
+      position: 'absolute',
+      top: 35,
+      right: 14,
+      zIndex: 50,
+    },
+    nebula: {
+      position: 'absolute',
+      width: 320,
+      height: 320,
+      borderRadius: 160,
+      opacity: 0.08,
+    },
+    scrollContent: {
+      flexGrow: 1,
+      justifyContent: 'center',
+      paddingHorizontal: 24,
+      paddingVertical: 32,
+    },
+    cardOuter: {
+      borderColor: 'rgba(255,255,255,0.18)',
+      borderWidth: 1,
+      borderRadius: 20,
+      overflow: 'hidden',
+      // sombras
+      shadowColor: '#000',
+      shadowOpacity: 0.35,
+      shadowOffset: { width: 0, height: 12 },
+      shadowRadius: 24,
+      elevation: 12,
+    },
+    blur: {
+      padding: 20,
+      backgroundColor: 'rgba(255,255,255,0.03)', // leve filme para reforçar vidro
+    },
+    glare: {
+      position: 'absolute',
+      top: -60,
+      left: -40,
+      width: 220,
+      height: 140,
+      borderRadius: 80,
+      backgroundColor: COLORS.white,
+      opacity: 0.06,
+      transform: [{ rotateZ: '-15deg' }],
+    },
+    title: {
+      color: COLORS.white,
+      fontSize: 28,
+      fontWeight: '800',
+      letterSpacing: 0.5,
+    },
+    subtitle: {
+      color: COLORS.lilac,
+      fontSize: 13,
+      marginTop: 4,
+      marginBottom: 16,
+      opacity: 0.9,
+    },
+    errorBox: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: 'rgba(255,107,107,0.12)',
+      borderWidth: 1,
+      borderColor: 'rgba(255,255,255,0.16)',
+      paddingVertical: 10,
+      paddingHorizontal: 12,
+      borderRadius: 12,
+      marginBottom: 12,
+    },
+    errorText: {
+      color: '#FFD7D7',
+      fontSize: 13,
+      flex: 1,
+    },
+    fieldGroup: { marginBottom: 14 },
+    label: { color: 'rgba(241,250,238,0.8)', marginBottom: 6, fontSize: 12 },
+    input: {
+      backgroundColor: 'rgba(11,13,23,0.5)',
+      borderColor: 'rgba(255,255,255,0.14)',
+      borderWidth: 1,
+      color: COLORS.white,
+      paddingHorizontal: 14,
+      paddingVertical: Platform.select({ ios: 14, android: 10, default: 12 }) as any,
+      borderRadius: 12,
+      fontSize: 14,
+    },
+    passwordRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+    },
+    eyeBtn: {
+      position: 'absolute',
+      right: 10,
+      height: Platform.select({ ios: 44, android: 40, default: 42 }) as any,
+      width: 32,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    primaryBtn: {
+      backgroundColor: COLORS.blue,
+      paddingVertical: 14,
+      borderRadius: 12,
+      alignItems: 'center',
+      overflow: 'hidden',
+      borderWidth: 1,
+      borderColor: 'rgba(255,255,255,0.14)'
+    },
+    btnPressed: { opacity: 0.85 },
+    btnContentRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center' },
+    btnSheen: {
+      position: 'absolute',
+      top: -10,
+      left: -60,
+      width: 80,
+      height: 60,
+      backgroundColor: 'rgba(255,255,255,0.15)',
+      borderRadius: 30,
+    },
+    primaryText: { color: COLORS.white, fontWeight: '700', letterSpacing: 0.5 },
+    secondaryBtn: { paddingVertical: 12, alignItems: 'center' },
+    secondaryText: { color: COLORS.lilac, fontWeight: '600' },
+    footerNote: { textAlign: 'center', color: 'rgba(241,250,238,0.55)', marginTop: 18, fontSize: 12 },
+    miniFab: {
+      position: 'absolute',
+      left: 20,
+      bottom: 10,
+      width: 34,
+      height: 34,
+      borderRadius: 17,
+      overflow: 'hidden',
+      borderWidth: 1,
+      borderColor: 'rgba(255,255,255,0.14)',
+      shadowColor: '#000',
+      shadowOpacity: 0.35,
+      shadowOffset: { width: 0, height: 4 },
+      shadowRadius: 8,
+      elevation: 6,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: 'rgba(255,255,255,0.06)'
+    },
+    miniFabBlur: {
+      flex: 1,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+  } as const;
+}

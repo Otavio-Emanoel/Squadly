@@ -1,5 +1,5 @@
 import { StatusBar } from 'expo-status-bar';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import SplashScreen from './screens/splashScreen';
 import LoginScreen from './screens/loginScreen';
@@ -11,14 +11,17 @@ import ProfileEditScreen from './screens/profileEditScreen';
 import SpaceStackScreen from './screens/spaceStackScreen';
 import LiquidNavbar, { LiquidNavItem } from './components/LiquidNavbar';
 import { Alert, Animated, Easing } from 'react-native';
+import { ThemeProvider, useTheme } from './theme/ThemeContext';
+import { getMe } from './services/auth';
 
-export default function App() {
+function AppInner() {
   const [ready, setReady] = useState(false);
   const [logged, setLogged] = useState(false);
   const [previewSpaceStack, setPreviewSpaceStack] = useState(false);
   const [authScreen, setAuthScreen] = useState<'login' | 'register'>('login');
   const [token, setToken] = useState<string | null>(null);
   const [screen, setScreen] = useState<'home' | 'kanban' | 'profile' | 'profileEdit' | 'spaceStack'>('home');
+  const { setTheme } = useTheme();
   // Navbar persistente
   const navItems: LiquidNavItem[] = [
     { key: 'home', label: 'Home', icon: 'home' },
@@ -55,6 +58,16 @@ export default function App() {
             onLogin={(email, tk) => {
               setToken(tk);
               setLogged(true);
+              // busca o tema do usuário após login
+              if (tk) {
+                (async () => {
+                  try {
+                    const me = await getMe(tk);
+                    const themeName = me?.user?.theme || 'earth';
+                    setTheme(themeName as any);
+                  } catch {}
+                })();
+              }
             }}
             onRegister={() => setAuthScreen('register')}
             onOpenSpaceStack={() => setPreviewSpaceStack(true)}
@@ -64,6 +77,15 @@ export default function App() {
             onRegister={({ email, token }) => {
               setToken(token);
               setLogged(true);
+              if (token) {
+                (async () => {
+                  try {
+                    const me = await getMe(token);
+                    const themeName = me?.user?.theme || 'earth';
+                    setTheme(themeName as any);
+                  } catch {}
+                })();
+              }
             }}
             onGoToLogin={() => setAuthScreen('login')}
           />
@@ -143,3 +165,11 @@ const styles = StyleSheet.create({
     backgroundColor: '#0B0D17',
   },
 });
+
+export default function App() {
+  return (
+    <ThemeProvider initialName="earth">
+      <AppInner />
+    </ThemeProvider>
+  );
+}

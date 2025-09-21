@@ -3,19 +3,12 @@ import { Animated, Dimensions, Easing, Linking, Platform, Pressable, ScrollView,
 import { BlurView } from 'expo-blur';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import ConnectionBadge from '../components/ConnectionBadge';
+import { useTheme } from '../theme/ThemeContext';
 import { getMe, User } from '../services/auth';
 
 const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
 
-const COLORS = {
-    bg: '#0B0D17',
-    white: '#F1FAEE',
-    lilac: '#A8A4FF',
-    blue: '#3D5A80',
-    cyan: '#64DFDF',
-    pink: '#F471B5',
-    mint: '#7FFFD4',
-};
+// virá do tema
 
 // Starfield (mesmo padrão da Home)
 type Star = {
@@ -27,7 +20,7 @@ type Star = {
     opacity: number;
 };
 
-function useStarfield(total = 90) {
+function useStarfield(total = 90, COLORS: any) {
     const layers = useMemo(() => {
         const stars: Star[] = [];
         for (let i = 0; i < total; i++) {
@@ -47,7 +40,7 @@ function useStarfield(total = 90) {
             });
         }
         return stars;
-    }, [total]);
+        }, [total, COLORS]);
 
     useEffect(() => {
         const anims = layers.map((s) => {
@@ -83,7 +76,8 @@ type ProfileScreenProps = {
 };
 
 export default function ProfileScreen({ token, onEditProfile, onLogout }: ProfileScreenProps) {
-    const stars = useStarfield(90);
+    const { colors: COLORS, setTheme } = useTheme();
+    const stars = useStarfield(90, COLORS);
     const [user, setUser] = useState<User | null>(null);
     const [error, setError] = useState<string | null>(null);
     const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
@@ -104,6 +98,7 @@ export default function ProfileScreen({ token, onEditProfile, onLogout }: Profil
             try {
                 const me = await getMe(token);
                 setUser(me.user);
+                if (me?.user?.theme) setTheme(me.user.theme as any);
             } catch (e: any) {
                 setError(e?.message || 'Falha ao carregar perfil');
             }
@@ -158,6 +153,7 @@ export default function ProfileScreen({ token, onEditProfile, onLogout }: Profil
         return Math.max(0, Math.min(1, pct));
     })();
 
+    const styles = React.useMemo(() => StyleSheet.create(makeStyles(COLORS)), [COLORS]);
     return (
         <View style={styles.root}>
             <Animated.View
@@ -557,7 +553,8 @@ export default function ProfileScreen({ token, onEditProfile, onLogout }: Profil
     );
 }
 
-const styles = StyleSheet.create({
+function makeStyles(COLORS: any) {
+  return {
     logoutBtn: {
         alignSelf: 'center',
         marginTop: 4,
@@ -975,4 +972,5 @@ const styles = StyleSheet.create({
         marginVertical: 4,
         borderRadius: 1,
     },
-});
+  } as const;
+}

@@ -3,18 +3,12 @@ import { Animated, Dimensions, Easing, Pressable, StyleSheet, Text, View, Alert,
 import { BlurView } from 'expo-blur';
 import ConnectionBadge from '../components/ConnectionBadge';
 import { getMe, User } from '../services/auth';
+import { useTheme } from '../theme/ThemeContext';
 import FeatureCards, { FeatureCardItem } from '../components/FeatureCards';
 
 const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
 
-const COLORS = {
-  bg: '#0B0D17',
-  white: '#F1FAEE',
-  lilac: '#A8A4FF',
-  purple: '#9D4EDD',
-  blue: '#3D5A80',
-  cyan: '#64DFDF',
-};
+// Cores via tema
 
 type Star = {
   x: Animated.Value;
@@ -25,14 +19,14 @@ type Star = {
   opacity: number;
 };
 
-function useStarfield(total = 100) {
+function useStarfield(total = 100, COLORS: any) {
   const layers = useMemo(() => {
     const stars: Star[] = [];
     for (let i = 0; i < total; i++) {
       const layer = Math.random();
       const size = layer < 0.5 ? Math.random() * 1.5 + 0.5 : Math.random() * 2.4 + 0.6;
       const speed = layer < 0.4 ? 8 : layer < 0.75 ? 16 : 28;
-      const color = Math.random() > 0.82 ? COLORS.lilac : COLORS.white;
+  const color = Math.random() > 0.82 ? COLORS.lilac : COLORS.white;
       const startX = Math.random() * SCREEN_W;
       const y = Math.random() * SCREEN_H;
       stars.push({
@@ -45,7 +39,7 @@ function useStarfield(total = 100) {
       });
     }
     return stars;
-  }, [total]);
+  }, [total, COLORS]);
 
   useEffect(() => {
     const anims = layers.map((s) => {
@@ -83,7 +77,8 @@ export type HomeScreenProps = {
 };
 
 export default function HomeScreen({ token, onLogout, onOpenKanban, onOpenProfile, onOpenSpaceStack }: HomeScreenProps) {
-  const stars = useStarfield(110);
+  const { colors: COLORS, setTheme } = useTheme();
+  const stars = useStarfield(110, COLORS);
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -103,7 +98,10 @@ export default function HomeScreen({ token, onLogout, onOpenKanban, onOpenProfil
     (async () => {
       try {
         const me = await getMe(token);
-        if (mounted) setUser(me.user);
+        if (mounted) {
+          setUser(me.user);
+          if (me?.user?.theme) setTheme(me.user.theme as any);
+        }
       } catch (e: any) {
         if (mounted) setError(e?.message || 'Falha ao carregar usuário');
       } finally {
@@ -193,7 +191,7 @@ export default function HomeScreen({ token, onLogout, onOpenKanban, onOpenProfil
       percentBadge: 'NOVIDADE',
       image: require('../assets/spacestack.png'),
       imageSide: 'left',
-      gradient: ['#64DFDF', '#3D5A80'],
+  gradient: [COLORS.cyan, COLORS.blue],
       onPress: () => leaveAndNavigate(() => onOpenSpaceStack?.()),
     },
     {
@@ -203,11 +201,12 @@ export default function HomeScreen({ token, onLogout, onOpenKanban, onOpenProfil
       percentBadge: '🔥',
       image: require('../assets/splash-icon.png'),
       imageSide: 'right',
-      gradient: ['#64DFDF', '#9D4EDD'],
+  gradient: [COLORS.cyan, COLORS.purple],
       onPress: () => Alert.alert('Em breve', 'Templates em desenvolvimento.'),
     },
   ];
 
+  const styles = React.useMemo(() => StyleSheet.create(makeStyles(COLORS)), [COLORS]);
   return (
     <View style={styles.root}>
       <Animated.View
@@ -290,18 +289,21 @@ export default function HomeScreen({ token, onLogout, onOpenKanban, onOpenProfil
             title="Criar Squad"
             description="Monte uma nova tripulação e defina objetivos"
             color={COLORS.cyan}
+            COLORS={COLORS}
             onPress={() => Alert.alert('Em breve', 'Funcionalidade de criação de squad em desenvolvimento.')} 
           />
           <ActionCard
             title="Minhas Tarefas"
             description="Veja e priorize missões do dia"
             color={COLORS.lilac}
+            COLORS={COLORS}
             onPress={() => Alert.alert('Em breve', 'Lista de tarefas em desenvolvimento.')} 
           />
           <ActionCard
             title="Explorar"
             description="Descubra novas constelações de produtividade"
             color={COLORS.blue}
+            COLORS={COLORS}
             onPress={() => Alert.alert('Explorar', 'Nada como explorar o universo...')} 
           />
           </View>
@@ -317,20 +319,42 @@ export default function HomeScreen({ token, onLogout, onOpenKanban, onOpenProfil
   );
 }
 
-function ActionCard({ title, description, onPress, color }: { title: string; description: string; onPress?: () => void; color: string }) {
+function ActionCard({ title, description, onPress, color, COLORS }: { title: string; description: string; onPress?: () => void; color: string; COLORS: any }) {
   return (
-    <BlurView intensity={80} tint="dark" style={styles.card}>
-      <View style={[styles.pill, { backgroundColor: color }]} />
-      <Text style={styles.cardTitle}>{title}</Text>
-      <Text style={styles.cardDesc}>{description}</Text>
-      <Pressable onPress={onPress} style={({ pressed }) => [styles.cardBtn, pressed && { opacity: 0.9 }]}> 
-        <Text style={styles.cardBtnText}>Abrir</Text>
+    <BlurView
+      intensity={80}
+      tint="dark"
+      style={{
+        width: (SCREEN_W - 20 * 2 - 12) / 2,
+        borderRadius: 16,
+        padding: 16,
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.14)',
+      }}
+    >
+      <View style={{ width: 24, height: 6, borderRadius: 3, marginBottom: 10, opacity: 0.9, backgroundColor: color }} />
+      <Text style={{ color: COLORS.white, fontWeight: '800', fontSize: 16 }}>{title}</Text>
+      <Text style={{ color: 'rgba(241,250,238,0.75)', fontSize: 12, marginTop: 4, minHeight: 36 }}>{description}</Text>
+      <Pressable
+        onPress={onPress}
+        style={({ pressed }) => [{
+          backgroundColor: 'rgba(61, 90, 128, 0.55)',
+          paddingVertical: 10,
+          borderRadius: 10,
+          alignItems: 'center',
+          marginTop: 10,
+          borderWidth: 1,
+          borderColor: 'rgba(255,255,255,0.12)'
+        }, pressed && { opacity: 0.9 }]}
+      > 
+        <Text style={{ color: COLORS.white, fontWeight: '700' }}>Abrir</Text>
       </Pressable>
     </BlurView>
   );
 }
 
-const styles = StyleSheet.create({
+function makeStyles(COLORS: any) {
+  return {
   root: { flex: 1, backgroundColor: COLORS.bg },
   badgeWrap: {
     position: 'absolute',
@@ -450,4 +474,5 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(255,255,255,0.16)'
   },
   logoutText: { color: COLORS.white, fontWeight: '700' },
-});
+  } as const;
+}

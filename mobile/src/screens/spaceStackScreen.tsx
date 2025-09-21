@@ -1,16 +1,11 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Animated, Dimensions, Easing, Pressable, StyleSheet, Text, View, Alert, Modal, Vibration } from 'react-native';
 import { BlurView } from 'expo-blur';
+import { useTheme } from '../theme/ThemeContext';
 
 const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
 
-const COLORS = {
-  bg: '#0B0D17',
-  white: '#F1FAEE',
-  lilac: '#A8A4FF',
-  blue: '#3D5A80',
-  cyan: '#64DFDF',
-};
+// Cores via tema
 const TILE = '#7B6FEA';
 const GRID_BG = 'rgba(255,255,255,0.03)';
 const GRID_LINE = 'rgba(255,255,255,0.07)';
@@ -192,8 +187,10 @@ export type SpaceStackScreenProps = {
 };
 
 export default function SpaceStackScreen({ onBack }: SpaceStackScreenProps) {
+  const { colors: COLORS } = useTheme();
   const rootRef = useRef<View | null>(null);
   const [rootPos, setRootPos] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+  const styles = React.useMemo(() => StyleSheet.create<any>(makeStyles(COLORS) as any), [COLORS]);
   const size = 8; // 8x8
   const [board, setBoard] = useState<number[][]>(() => Array.from({ length: size }, () => Array(size).fill(0)));
   const [pieces, setPieces] = useState<Piece[]>(() => randomPieces(3));
@@ -791,8 +788,7 @@ export default function SpaceStackScreen({ onBack }: SpaceStackScreenProps) {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
+const makeStyles = (COLORS: any) => ({
   root: {
     flex: 1,
     backgroundColor: COLORS.bg,
