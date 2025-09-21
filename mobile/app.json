@@ -21,14 +21,17 @@
         "backgroundColor": "#0B0D17"
       },
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "package": "com.otavioemanoel.squadly"
     },
     "web": {
       "favicon": "./src/assets/favicon.png"
     },
     "extra": {
       "expoClientId": "",
-      "eas": { "projectId": "" }
+      "eas": {
+        "projectId": "d49cfe3e-0bd0-4bee-ae90-af68348d8f70"
+      }
     },
     "experiments": {
       "typedRoutes": false
