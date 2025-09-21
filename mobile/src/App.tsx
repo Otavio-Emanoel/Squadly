@@ -79,7 +79,14 @@ export default function App() {
       ) : screen === 'kanban' ? (
         <KanbanScreen onBack={() => setScreen('home')} />
       ) : screen === 'profile' ? (
-        <ProfileScreen token={token!} onEditProfile={() => setScreen('profileEdit')} />
+        <ProfileScreen
+          token={token!}
+          onEditProfile={() => setScreen('profileEdit')}
+          onLogout={() => {
+            setLogged(false);
+            setToken(null);
+          }}
+        />
       ) : (
         <ProfileEditScreen token={token!} onBack={() => setScreen('profile')} onSaved={() => setScreen('profile')} />
       )}

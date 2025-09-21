@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Animated, Dimensions, Easing, Linking, Platform, Pressable, ScrollView, StyleSheet, Text, View, Image } from 'react-native';
+import { Animated, Dimensions, Easing, Linking, Platform, Pressable, ScrollView, StyleSheet, Text, View, Image, Modal } from 'react-native';
 import { BlurView } from 'expo-blur';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import ConnectionBadge from '../components/ConnectionBadge';
@@ -79,12 +79,15 @@ function useStarfield(total = 90) {
 type ProfileScreenProps = {
     token: string;
     onEditProfile?: () => void;
+    onLogout?: () => void;
 };
 
-export default function ProfileScreen({ token, onEditProfile }: ProfileScreenProps) {
+export default function ProfileScreen({ token, onEditProfile, onLogout }: ProfileScreenProps) {
     const stars = useStarfield(90);
     const [user, setUser] = useState<User | null>(null);
     const [error, setError] = useState<string | null>(null);
+    const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+    const springVal = useRef(new Animated.Value(0)).current; // 0 -> repouso, 1 -> pressionado
 
     // animações de entrada
     const animHeader = useRef(new Animated.Value(0)).current;
@@ -300,7 +303,7 @@ export default function ProfileScreen({ token, onEditProfile }: ProfileScreenPro
                             <Animated.View
                                 style={{
                                     position: 'absolute',
-                                    left: 90,
+                                    left: 70,
                                     top: 22,
                                     width: 22,
                                     height: 22,
@@ -475,7 +478,79 @@ export default function ProfileScreen({ token, onEditProfile }: ProfileScreenPro
                         </BlurView>
                     </View>
                 </Animated.View>
+
+                {/* Botão de sair com mola */}
+                <Animated.View
+                    style={{
+                        opacity: animCards,
+                        transform: [{ translateY: animCards.interpolate({ inputRange: [0, 1], outputRange: [10, 0] }) }],
+                    }}
+                >
+                    <Pressable
+                        onPressIn={() => {
+                            Animated.spring(springVal, {
+                                toValue: 1,
+                                friction: 4,
+                                tension: 120,
+                                useNativeDriver: true,
+                            }).start();
+                        }}
+                        onPressOut={() => {
+                            Animated.spring(springVal, {
+                                toValue: 0,
+                                friction: 5,
+                                tension: 120,
+                                useNativeDriver: true,
+                            }).start();
+                        }}
+                        onPress={() => setShowLogoutConfirm(true)}
+                    >
+                        <Animated.View
+                            style={[
+                                styles.logoutBtn,
+                                {
+                                    transform: [
+                                        {
+                                            scale: springVal.interpolate({ inputRange: [0, 1], outputRange: [1, 0.96] }),
+                                        },
+                                    ],
+                                },
+                            ]}
+                        >
+                            <Text style={styles.logoutText}>Sair da conta</Text>
+                        </Animated.View>
+                    </Pressable>
+                </Animated.View>
             </ScrollView>
+
+            {/* Modal de confirmação de logout */}
+            <Modal
+                visible={showLogoutConfirm}
+                animationType="fade"
+                transparent
+                onRequestClose={() => setShowLogoutConfirm(false)}
+            >
+                <View style={styles.modalOverlay}>
+                    <BlurView intensity={1000} tint="dark" style={styles.modalCard}>
+                        <Text style={styles.modalTitle}>Deseja sair?</Text>
+                        <Text style={styles.modalDesc}>Você precisará fazer login novamente para acessar sua conta.</Text>
+                        <View style={styles.modalRow}>
+                            <Pressable onPress={() => setShowLogoutConfirm(false)} style={({ pressed }) => [styles.modalBtn, pressed && { opacity: 0.9 }]}>
+                                <Text style={styles.modalBtnText}>Cancelar</Text>
+                            </Pressable>
+                            <Pressable
+                                onPress={() => {
+                                    setShowLogoutConfirm(false);
+                                    onLogout && onLogout();
+                                }}
+                                style={({ pressed }) => [styles.modalBtnDanger, pressed && { opacity: 0.9 }]}
+                            >
+                                <Text style={styles.modalBtnDangerText}>Sair</Text>
+                            </Pressable>
+                        </View>
+                    </BlurView>
+                </View>
+            </Modal>
 
             {/* Navbar persistente fica no App */}
         </View>
@@ -483,6 +558,76 @@ export default function ProfileScreen({ token, onEditProfile }: ProfileScreenPro
 }
 
 const styles = StyleSheet.create({
+    logoutBtn: {
+        alignSelf: 'center',
+        marginTop: 4,
+        paddingVertical: 12,
+        paddingHorizontal: 18,
+        borderRadius: 12,
+        backgroundColor: 'rgba(157, 78, 221, 0.30)',
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.16)',
+    },
+    logoutText: {
+        color: COLORS.white,
+        fontWeight: '700',
+    },
+    modalOverlay: {
+        ...StyleSheet.absoluteFillObject,
+        backgroundColor: 'rgba(0,0,0,0.4)',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: 20,
+    },
+    modalCard: {
+        width: '100%',
+        maxWidth: 420,
+        borderRadius: 26,
+        padding: 16,
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.14)',
+        gap: 10,
+    },
+    modalTitle: {
+        color: COLORS.white,
+        fontWeight: '800',
+        fontSize: 18,
+    },
+    modalDesc: {
+        color: 'rgba(241,250,238,0.85)',
+        fontSize: 13,
+    },
+    modalRow: {
+        flexDirection: 'row',
+        gap: 10,
+        marginTop: 8,
+    },
+    modalBtn: {
+        flex: 1,
+        alignItems: 'center',
+        paddingVertical: 10,
+        borderRadius: 10,
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.14)',
+        backgroundColor: 'rgba(255,255,255,0.06)',
+    },
+    modalBtnText: {
+        color: COLORS.white,
+        fontWeight: '700',
+    },
+    modalBtnDanger: {
+        flex: 1,
+        alignItems: 'center',
+        paddingVertical: 10,
+        borderRadius: 10,
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.16)',
+        backgroundColor: 'rgba(255, 107, 107, 0.28)',
+    },
+    modalBtnDangerText: {
+        color: '#FFD7D7',
+        fontWeight: '800',
+    },
     sectionsColumn: {
         flexDirection: 'column',
         gap: 22,

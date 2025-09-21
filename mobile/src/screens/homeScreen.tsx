@@ -296,19 +296,7 @@ export default function HomeScreen({ token, onLogout, onOpenKanban, onOpenProfil
           </View>
         </Animated.View>
 
-        <Animated.View
-          style={{
-            opacity: animLogout,
-            transform: [{ translateY: animLogout.interpolate({ inputRange: [0, 1], outputRange: [10, 0] }) }],
-          }}
-        >
-          <Pressable
-            onPress={() => leaveAndNavigate(() => onLogout && onLogout())}
-            style={({ pressed }) => [styles.logoutBtn, pressed && { opacity: 0.85 }]}
-          >
-            <Text style={styles.logoutText}>Sair</Text>
-          </Pressable>
-        </Animated.View>
+        {/* Botão de sair movido para a tela de Perfil */}
 
         {/* Botão extra removido: agora usamos o card "Kanban" acima */}
       </ScrollView>
