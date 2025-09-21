@@ -346,11 +346,14 @@ export default function SpaceStackScreen({ onBack }: SpaceStackScreenProps) {
   // Drag and drop states
   const [dragging, setDragging] = useState(false)
   const [dragIndex, setDragIndex] = useState<number | null>(null)
-  const [dragX, setDragX] = useState(0)
-  const [dragY, setDragY] = useState(0)
+  // Posição do ghost usando Animated para evitar re-render a cada movimento
+  const dragPos = useRef(new Animated.ValueXY({ x: 0, y: 0 })).current
+  const ghostLeft = useRef(new Animated.Value(0)).current
+  const ghostTop = useRef(new Animated.Value(0)).current
   const dragStart = useRef<{ x: number; y: number } | null>(null)
   const didDrag = useRef(false)
   const [hoverCell, setHoverCell] = useState<{ r: number; c: number } | null>(null)
+  const lastHoverRef = useRef<{ r: number; c: number } | null>(null)
   // efeitos de limpeza
   const [clearingCells, setClearingCells] = useState<Array<{ r: number; c: number }>>([])
   const explodeAnim = useRef(new Animated.Value(0)).current
@@ -745,8 +748,8 @@ export default function SpaceStackScreen({ onBack }: SpaceStackScreenProps) {
                             key={j}
                             style={{
                               position: "absolute",
-                              left: 10,
-                              top: 10,
+                              left: j * cellSize,
+                              top: 0,
                               width: cellSize,
                               height: cellSize,
                               backgroundColor: fits ? hexToRgba(pColor, 0.35) : "rgba(221,64,64,0.35)",
@@ -940,26 +943,57 @@ export default function SpaceStackScreen({ onBack }: SpaceStackScreenProps) {
               setDragging(true)
               setDragIndex(i)
               setSelected(i)
-              setDragX(pageX)
-              setDragY(pageY)
+              // posiciona ghost inicialmente
+              const w = (p?.[0]?.length || 1) * cellSize
+              const h = (p?.length || 1) * cellSize
+              const initLeft = pageX - rootPos.x - Math.floor(w / 2)
+              const initTop = pageY - rootPos.y - Math.floor(h / 2)
+              ghostLeft.setValue(initLeft)
+              ghostTop.setValue(initTop)
+              // define célula inicial (se aplicável)
+              const anchorX = pageX - Math.floor(w / 2)
+              const anchorY = pageY - Math.floor(h / 2)
+              const cell = pageToCell(anchorX, anchorY)
+              if (cell && (!lastHoverRef.current || cell.r !== lastHoverRef.current.r || cell.c !== lastHoverRef.current.c)) {
+                lastHoverRef.current = cell
+                setHoverCell(cell)
+              }
             }}
             onResponderMove={(e) => {
               const { pageX, pageY } = e.nativeEvent
-              setDragX(pageX)
-              setDragY(pageY)
               if (dragStart.current) {
                 const dx = Math.abs(pageX - dragStart.current.x)
                 const dy = Math.abs(pageY - dragStart.current.y)
                 if (dx > 6 || dy > 6) didDrag.current = true
               }
               // tenta alinhar o preview pelo centro do dedo ao canto superior esquerdo da peça
-              const p = pieces[i]
               const w = (p?.[0]?.length || 1) * cellSize
               const h = (p?.length || 1) * cellSize
               const anchorX = pageX - Math.floor(w / 2)
               const anchorY = pageY - Math.floor(h / 2)
+              // posição absoluta do tabuleiro
+              const boardAbsX = rootPos.x + boardLocal.x + BOARD_PAD
+              const boardAbsY = rootPos.y + boardLocal.y + BOARD_PAD
+              const withinX = pageX >= boardAbsX && pageX <= boardAbsX + gridWidth
+              const withinY = pageY >= boardAbsY && pageY <= boardAbsY + gridWidth
+              let left = pageX - rootPos.x - Math.floor(w / 2)
+              let top = pageY - rootPos.y - Math.floor(h / 2)
+              if (withinX && withinY) {
+                const c = Math.max(0, Math.min(size - 1, Math.floor((anchorX - boardAbsX) / cellSize)))
+                const r = Math.max(0, Math.min(size - 1, Math.floor((anchorY - boardAbsY) / cellSize)))
+                left = boardAbsX - rootPos.x + c * cellSize
+                top = boardAbsY - rootPos.y + r * cellSize
+              }
+              ghostLeft.setValue(left)
+              ghostTop.setValue(top)
               const cell = pageToCell(anchorX, anchorY)
-              setHoverCell(cell)
+              if (
+                (cell && (!lastHoverRef.current || cell.r !== lastHoverRef.current.r || cell.c !== lastHoverRef.current.c)) ||
+                (!cell && lastHoverRef.current)
+              ) {
+                lastHoverRef.current = cell
+                setHoverCell(cell)
+              }
             }}
             onResponderRelease={(e) => {
               const { pageX, pageY } = e.nativeEvent
@@ -978,57 +1012,35 @@ export default function SpaceStackScreen({ onBack }: SpaceStackScreenProps) {
       </BlurView>
 
       {/* Ghost do drag (segue o dedo) */}
-      {dragging &&
-        dragIndex != null &&
-        pieces[dragIndex] &&
-        (() => {
-          const p = pieces[dragIndex]!
-          const w = p[0].length * cellSize
-          const h = p.length * cellSize
-          const pColor = getColorByIndex(pieceColors[dragIndex] || 1)
-          // posição absoluta do tabuleiro
-          const boardAbsX = rootPos.x + boardLocal.x + BOARD_PAD
-          const boardAbsY = rootPos.y + boardLocal.y + BOARD_PAD
-          // se o dedo está dentro do retângulo do board, alinhamos ao grid
-          const withinX = dragX >= boardAbsX && dragX <= boardAbsX + gridWidth
-          const withinY = dragY >= boardAbsY && dragY <= boardAbsY + gridWidth
-          let left = dragX - rootPos.x - w / 2
-          let top = dragY - rootPos.y - h / 2
-          if (withinX && withinY) {
-            const anchorX = dragX - w / 2
-            const anchorY = dragY - h / 2
-            const c = Math.max(0, Math.min(size - 1, Math.floor((anchorX - boardAbsX) / cellSize)))
-            const r = Math.max(0, Math.min(size - 1, Math.floor((anchorY - boardAbsY) / cellSize)))
-            left = boardAbsX - rootPos.x + c * cellSize
-            top = boardAbsY - rootPos.y + r * cellSize
-          }
-          return (
-            <View pointerEvents="none" style={{ position: "absolute", left, top, opacity: 0.92 }}>
-              {p.map((row, i) => (
-                <View key={i} style={{ flexDirection: "row" }}>
-                  {row.map((v, j) =>
-                    v ? (
-                      <View
-                        key={j}
-                        style={{
-                          width: cellSize,
-                          height: cellSize,
-                          backgroundColor: hexToRgba(pColor, 0.85),
-                          borderRightWidth: 1,
-                          borderBottomWidth: 1,
-                          borderColor: hexToRgba(THEME.white, 0.07),
-                          borderRadius: 4,
-                        }}
-                      />
-                    ) : (
-                      <View key={j} style={{ width: cellSize, height: cellSize }} />
-                    ),
-                  )}
-                </View>
-              ))}
+      {dragging && dragIndex != null && pieces[dragIndex] && (
+        <Animated.View
+          pointerEvents="none"
+          style={{ position: "absolute", transform: [{ translateX: ghostLeft }, { translateY: ghostTop }], opacity: 0.92 }}
+        >
+          {pieces[dragIndex]!.map((row, i) => (
+            <View key={i} style={{ flexDirection: "row" }}>
+              {row.map((v, j) =>
+                v ? (
+                  <View
+                    key={j}
+                    style={{
+                      width: cellSize,
+                      height: cellSize,
+                      backgroundColor: hexToRgba(getColorByIndex(pieceColors[dragIndex] || 1), 0.85),
+                      borderRightWidth: 1,
+                      borderBottomWidth: 1,
+                      borderColor: hexToRgba(THEME.white, 0.07),
+                      borderRadius: 4,
+                    }}
+                  />
+                ) : (
+                  <View key={j} style={{ width: cellSize, height: cellSize }} />
+                ),
+              )}
             </View>
-          )
-        })()}
+          ))}
+        </Animated.View>
+      )}
 
       {/* Game Over Modal melhorado */}
       <Modal transparent visible={gameOver} animationType="fade">
