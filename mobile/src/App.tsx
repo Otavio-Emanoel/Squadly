@@ -9,6 +9,8 @@ import KanbanScreen from './screens/kanbanScreen';
 import ProfileScreen from './screens/profileScreen';
 import ProfileEditScreen from './screens/profileEditScreen';
 import SpaceStackScreen from './screens/spaceStackScreen';
+import ExploreScreen from './screens/exploreScreen';
+import ProfilePublicScreen from './screens/profilePublicScreen';
 import LiquidNavbar, { LiquidNavItem } from './components/LiquidNavbar';
 import { Alert, Animated, Easing } from 'react-native';
 import { ThemeProvider, useTheme } from './theme/ThemeContext';
@@ -20,7 +22,8 @@ function AppInner() {
   const [previewSpaceStack, setPreviewSpaceStack] = useState(false);
   const [authScreen, setAuthScreen] = useState<'login' | 'register'>('login');
   const [token, setToken] = useState<string | null>(null);
-  const [screen, setScreen] = useState<'home' | 'kanban' | 'profile' | 'profileEdit' | 'spaceStack'>('home');
+  const [screen, setScreen] = useState<'home' | 'kanban' | 'profile' | 'profileEdit' | 'spaceStack' | 'explore' | 'profilePublic'>('home');
+  const [publicUsername, setPublicUsername] = useState<string | null>(null);
   const { setTheme } = useTheme();
   // Navbar persistente
   const navItems: LiquidNavItem[] = [
@@ -115,6 +118,10 @@ function AppInner() {
         <KanbanScreen onBack={() => setScreen('home')} />
       ) : screen === 'spaceStack' ? (
         <SpaceStackScreen onBack={() => setScreen('home')} />
+      ) : screen === 'explore' ? (
+        <ExploreScreen token={token!} onOpenUser={(username) => { setPublicUsername(username); setScreen('profilePublic'); }} />
+      ) : screen === 'profilePublic' ? (
+        <ProfilePublicScreen username={publicUsername || ''} onBack={() => setScreen('explore')} />
       ) : screen === 'profile' ? (
         <ProfileScreen
           token={token!}
@@ -143,7 +150,7 @@ function AppInner() {
               } else if (item.key === 'profile') {
                 setScreen('profile');
               } else if (item.key === 'explore') {
-                Alert.alert('Explorar', 'Nada como explorar o universo...');
+                  setScreen('explore');
               } else if (item.key === 'inbox') {
                 Alert.alert('Inbox', 'Caixa de entrada em construção.');
               }
