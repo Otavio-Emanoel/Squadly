@@ -7,6 +7,7 @@ const UserSchema = new Schema(
     password: { type: String, required: true, select: false, minlength: 6 },
     username: { type: String, required: true, unique: true, lowercase: true, trim: true, index: true },
     icon: { type: String, default: 'rocket', trim: true },
+  photoUrl: { type: String, default: '', trim: true },
     status: { type: String, default: '', trim: true, maxlength: 140 },
     bio: { type: String, default: '', trim: true, maxlength: 280 },
     links: {

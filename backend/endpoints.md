@@ -91,6 +91,17 @@ POST `/api/chats/:chatId/seen`
 ```json
 { "message": "username indisponível" }
 ```
+
+### Enviar foto de perfil
+POST `/api/users/me/photo`
+- Auth: sim (Bearer token)
+- Form-Data:
+  - `photo` (file) — imagem JPEG/PNG/WEBP até 5MB
+- 201
+```json
+{ "user": { "_id": "...", "photoUrl": "/uploads/1695398123-abc123.jpg" }, "photoUrl": "/uploads/1695398123-abc123.jpg" }
+```
+- Observação: arquivos são servidos em `/uploads/...`. Combine com a BASE_URL do servidor para formar a URL completa.
 - Body: —
 - 200
 ```json

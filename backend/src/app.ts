@@ -2,6 +2,7 @@ import express, { Request, Response } from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import { router } from './routes/index';
+import path from 'path';
 import { errorHandler } from './middlewares/errorHandler';
 
 dotenv.config();
@@ -14,6 +15,8 @@ app.use(cors({
   credentials: true,
 }));
 app.use(express.json());
+// Servir arquivos estáticos de uploads (fotos de perfil)
+app.use('/uploads', express.static(path.join(__dirname, '..', 'uploads')));
 
 // Health check
 app.get('/health', (_req: Request, res: Response) => {

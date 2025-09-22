@@ -99,4 +99,19 @@ export class UserController {
       return res.status(status).json({ message: err?.message || 'Erro ao consultar relacionamento' });
     }
   }
+
+  async uploadPhoto(req: Request, res: Response) {
+    try {
+      if (!req.user?.id) return res.status(401).json({ message: 'Não autorizado' });
+      const file = (req as any).file as Express.Multer.File | undefined;
+      if (!file) return res.status(400).json({ message: 'Arquivo de imagem é obrigatório' });
+      const photoUrl = `/uploads/${file.filename}`;
+      const updated = await User.findByIdAndUpdate(req.user.id, { $set: { photoUrl } }, { new: true }).lean();
+      if (!updated) return res.status(404).json({ message: 'Usuário não encontrado' });
+      return res.status(201).json({ user: updated, photoUrl });
+    } catch (err: any) {
+      const status = err?.status || 500;
+      return res.status(status).json({ message: err?.message || 'Erro ao enviar foto' });
+    }
+  }
 }
