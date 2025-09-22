@@ -10,5 +10,8 @@ const userController = new UserController();
 userRouter.get('/:username', (req: Request, res: Response) => userController.showProfile(req, res));
 userRouter.post('/', (req: Request, res: Response) => userController.create(req, res));
 userRouter.patch('/me', auth, (req: Request, res: Response) => userController.updateMe(req, res));
+// seguir / deixar de seguir
+userRouter.post('/:username/follow', auth, (req: Request, res: Response) => userController.follow(req, res));
+userRouter.post('/:username/unfollow', auth, (req: Request, res: Response) => userController.unfollow(req, res));
 
 export { userRouter };

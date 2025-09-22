@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { createUser, listUsers, updateProfile, getPublicProfileByUsername } from '../services/user.service';
+import { createUser, listUsers, updateProfile, getPublicProfileByUsername, followUser, unfollowUser } from '../services/user.service';
 
 export class UserController {
   async index(req: Request, res: Response) {
@@ -50,6 +50,32 @@ export class UserController {
     } catch (err: any) {
       const status = err?.status || 500;
       return res.status(status).json({ message: err?.message || 'Erro ao buscar perfil' });
+    }
+  }
+
+  async follow(req: Request, res: Response) {
+    try {
+      if (!req.user?.id) return res.status(401).json({ message: 'Não autorizado' });
+      const { username } = req.params as { username?: string };
+      if (!username || !username.trim()) return res.status(400).json({ message: 'username é obrigatório' });
+      const result = await followUser(req.user.id, username);
+      return res.json(result);
+    } catch (err: any) {
+      const status = err?.status || 500;
+      return res.status(status).json({ message: err?.message || 'Erro ao seguir usuário' });
+    }
+  }
+
+  async unfollow(req: Request, res: Response) {
+    try {
+      if (!req.user?.id) return res.status(401).json({ message: 'Não autorizado' });
+      const { username } = req.params as { username?: string };
+      if (!username || !username.trim()) return res.status(400).json({ message: 'username é obrigatório' });
+      const result = await unfollowUser(req.user.id, username);
+      return res.json(result);
+    } catch (err: any) {
+      const status = err?.status || 500;
+      return res.status(status).json({ message: err?.message || 'Erro ao deixar de seguir usuário' });
     }
   }
 }

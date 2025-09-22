@@ -54,6 +54,8 @@ export default function ExploreScreen({ token, onOpenUser }: ExploreScreenProps 
   const { colors: COLORS } = useTheme();
   const stars = useStarfield(90, COLORS);
   const [query, setQuery] = useState('');
+  const [showDiscover, setShowDiscover] = useState(true);
+  const [recentQueries, setRecentQueries] = useState<string[]>([]);
   const [users, setUsers] = useState<UserItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -70,6 +72,38 @@ export default function ExploreScreen({ token, onOpenUser }: ExploreScreenProps 
   const scrollX = useRef(new Animated.Value(0)).current;
   const pagerRef = useRef<ScrollView | null>(null);
   const [tabBarWidth, setTabBarWidth] = useState<number | null>(null);
+
+  // Tendências mock (poderá vir do backend futuramente)
+  const trends = useMemo(
+    () => [
+      '#ReactNative',
+      '#TypeScript',
+      '#NodeJS',
+      '#UI',
+      '#OpenSource',
+      '#SpaceTheme',
+      '#JavaScript',
+      '#DesignSystem',
+    ],
+    []
+  );
+
+  // Persistência simples em memória (sessão) para últimas pesquisas
+  const addRecentQuery = (q: string) => {
+    const t = q.trim();
+    if (!t) return;
+    setRecentQueries((prev) => {
+      const next = [t, ...prev.filter((x) => x.toLowerCase() !== t.toLowerCase())];
+      return next.slice(0, 10);
+    });
+  };
+
+  const openExplore = () => {
+    setShowDiscover(false);
+    setActiveIndex(0);
+    // garante ir para a primeira aba
+    setTimeout(() => pagerRef.current?.scrollTo({ x: 0, animated: true }), 0);
+  };
 
   // Animar as estrelas
   useEffect(() => {
@@ -100,7 +134,7 @@ export default function ExploreScreen({ token, onOpenUser }: ExploreScreenProps 
   useEffect(() => {
     let cancelled = false;
     const handler = setTimeout(async () => {
-      if (activeIndex !== 0 || !query || query.trim().length < 2) {
+      if (showDiscover || activeIndex !== 0 || !query || query.trim().length < 2) {
         setUsers([]);
         setError(null);
         setLoading(false);
@@ -124,7 +158,7 @@ export default function ExploreScreen({ token, onOpenUser }: ExploreScreenProps 
       cancelled = true;
       clearTimeout(handler);
     };
-  }, [query, token, activeIndex]);
+  }, [query, token, activeIndex, showDiscover]);
 
   // animação de entrada em cascata quando a lista muda
   useEffect(() => {
@@ -249,122 +283,190 @@ export default function ExploreScreen({ token, onOpenUser }: ExploreScreenProps 
           style={styles.searchInput}
           value={query}
           onChangeText={setQuery}
+          onSubmitEditing={() => {
+            if (query.trim().length >= 2) {
+              addRecentQuery(query);
+            }
+            openExplore();
+          }}
           returnKeyType="search"
         />
       </View>
 
-      {/* Tabs */}
-      <View
-        style={styles.tabBar}
-        onLayout={(e) => setTabBarWidth(e.nativeEvent.layout.width)}
-      >
-        {/* Indicator */}
-        {tabBarWidth != null && (
-          <Animated.View
-            pointerEvents="none"
-            style={[
-              styles.tabIndicator,
-              {
-                width: tabBarWidth / SECTIONS.length,
-                transform: [
-                  {
-                    translateX: Animated.divide(scrollX, SCREEN_W).interpolate({
-                      inputRange: [0, SECTIONS.length - 1],
-                      outputRange: [0, (tabBarWidth * (SECTIONS.length - 1)) / SECTIONS.length],
-                      extrapolate: 'clamp',
-                    }),
-                  },
-                ],
-              },
-            ]}
-          />
-        )}
-        {SECTIONS.map((s, idx) => {
-          const isActive = activeIndex === idx;
-          return (
-            <Pressable
-              key={s.key}
-              style={({ pressed }) => [styles.tabItem, pressed && { opacity: 0.8 }]}
-              onPress={() => {
-                setActiveIndex(idx);
-                pagerRef.current?.scrollTo({ x: idx * SCREEN_W, animated: true });
-              }}
-            >
-              <Text style={[styles.tabText, isActive && styles.tabTextActive]}>{s.label}</Text>
-            </Pressable>
-          );
-        })}
-      </View>
-
-      {/* Pager horizontal */}
-      <Animated.ScrollView
-        ref={pagerRef}
-        horizontal
-        pagingEnabled
-        showsHorizontalScrollIndicator={false}
-        onScroll={Animated.event([{ nativeEvent: { contentOffset: { x: scrollX } } }], { useNativeDriver: false })}
-        onMomentumScrollEnd={(e) => {
-          const idx = Math.round(e.nativeEvent.contentOffset.x / SCREEN_W);
-          setActiveIndex(Math.min(Math.max(idx, 0), SECTIONS.length - 1));
-        }}
-        scrollEventThrottle={16}
-        keyboardShouldPersistTaps="handled"
-        style={styles.pager}
-      >
-        {/* Page 0 - Usuários */}
-        <View style={[styles.page, { width: SCREEN_W }]}> 
-          <View style={styles.section}> 
-            <Text style={styles.sectionTitle}>Usuários</Text>
-            {query.trim().length < 2 ? (
-              <Text style={styles.sectionHint}>Digite ao menos 2 caracteres para buscar.</Text>
-            ) : loading ? (
-              <Text style={styles.sectionHint}>Carregando...</Text>
-            ) : error ? (
-              <Text style={styles.sectionHint}>{error}</Text>
-            ) : users.length === 0 ? (
-              <Text style={styles.sectionHint}>Nenhum usuário encontrado.</Text>
-            ) : (
-              <FlatList
-                data={users}
-                keyExtractor={(it) => it._id}
-                renderItem={({ item }) => (
-                  <ExploreUserCard item={item} anim={itemAnims.get(item._id) ?? new Animated.Value(1)} />
-                )}
-                ItemSeparatorComponent={() => <View style={{ height: 10 }} />}
-                contentContainerStyle={{ paddingBottom: 12 }}
-              />
-            )}
-          </View>
-        </View>
-
-        {/* Page 1 - Posts (placeholder) */}
-        <View style={[styles.page, { width: SCREEN_W }]}> 
+      {showDiscover ? (
+        <View style={styles.discoverWrap}>
+          {/* Recentes */}
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Posts</Text>
-            <ScrollView nestedScrollEnabled>
-              <View style={styles.postsGrid}>
-                {placeholderPosts.map((i) => (
-                  <View key={`post-${i}`} style={[styles.postBox, { backgroundColor: i % 5 === 0 ? COLORS.cyan : i % 3 === 0 ? COLORS.lilac : COLORS.blue }]} />
+            <Text style={styles.sectionTitle}>Recentes</Text>
+            {recentQueries.length === 0 ? (
+              <Text style={styles.sectionHint}>Sem buscas recentes nesta sessão.</Text>
+            ) : (
+              <View style={styles.chipsRow}>
+                {recentQueries.map((q) => (
+                  <Pressable
+                    key={`recent-${q}`}
+                    style={({ pressed }) => [styles.chip, pressed && { opacity: 0.85 }]}
+                    onPress={() => {
+                      setQuery(q);
+                      openExplore();
+                    }}
+                  >
+                    <Ionicons name="time-outline" size={14} color="rgba(255,255,255,0.9)" />
+                    <Text style={styles.chipText}>{q}</Text>
+                  </Pressable>
                 ))}
               </View>
-              <Text style={[styles.sectionHint, { marginBottom: 12 }]}>Feed em construção — em breve, posts reais aqui.</Text>
-            </ScrollView>
+            )}
           </View>
-        </View>
 
-        {/* Page 2 - Explorar (placeholder) */}
-        <View style={[styles.page, { width: SCREEN_W }]}> 
+          {/* Tendências */}
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Explorar</Text>
-            <Text style={styles.sectionHint}>Outras seções em breve: Tags, Áudio, Reels...</Text>
-            <View style={[styles.postsGrid, { marginTop: 12 }]}>
-              {placeholderPosts.slice(0, 9).map((i) => (
-                <View key={`more-${i}`} style={[styles.postBox, { backgroundColor: i % 2 === 0 ? COLORS.cyan : COLORS.purple }]} />
+            <Text style={styles.sectionTitle}>Tendências</Text>
+            <View style={styles.chipsRow}>
+              {trends.map((t) => (
+                <Pressable
+                  key={`trend-${t}`}
+                  style={({ pressed }) => [styles.chip, pressed && { opacity: 0.85 }]}
+                  onPress={() => {
+                    const q = t.replace(/^#/, '');
+                    setQuery(q);
+                    addRecentQuery(q);
+                    openExplore();
+                  }}
+                >
+                  <Ionicons name="trending-up-outline" size={14} color="rgba(255,255,255,0.9)" />
+                  <Text style={styles.chipText}>{t}</Text>
+                </Pressable>
               ))}
             </View>
           </View>
+
+          {/* CTA Explorar */}
+          <View style={[styles.section, { alignItems: 'center', marginTop: 22 }]}>
+            <Pressable style={({ pressed }) => [styles.exploreCta, pressed && { opacity: 0.9 }]} onPress={openExplore}>
+              <LinearGradient colors={[COLORS.cyan, COLORS.lilac]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.exploreCtaBg}>
+                <Ionicons name="compass-outline" size={18} color={COLORS.white} />
+                <Text style={styles.exploreCtaText}>Explorar agora</Text>
+              </LinearGradient>
+            </Pressable>
+          </View>
         </View>
-      </Animated.ScrollView>
+      ) : (
+        <>
+          {/* Tabs */}
+          <View
+            style={styles.tabBar}
+            onLayout={(e) => setTabBarWidth(e.nativeEvent.layout.width)}
+          >
+            {/* Indicator */}
+            {tabBarWidth != null && (
+              <Animated.View
+                pointerEvents="none"
+                style={[
+                  styles.tabIndicator,
+                  {
+                    width: tabBarWidth / SECTIONS.length,
+                    transform: [
+                      {
+                        translateX: Animated.divide(scrollX, SCREEN_W).interpolate({
+                          inputRange: [0, SECTIONS.length - 1],
+                          outputRange: [0, (tabBarWidth * (SECTIONS.length - 1)) / SECTIONS.length],
+                          extrapolate: 'clamp',
+                        }),
+                      },
+                    ],
+                  },
+                ]}
+              />
+            )}
+            {SECTIONS.map((s, idx) => {
+              const isActive = activeIndex === idx;
+              return (
+                <Pressable
+                  key={s.key}
+                  style={({ pressed }) => [styles.tabItem, pressed && { opacity: 0.8 }]}
+                  onPress={() => {
+                    setActiveIndex(idx);
+                    pagerRef.current?.scrollTo({ x: idx * SCREEN_W, animated: true });
+                  }}
+                >
+                  <Text style={[styles.tabText, isActive && styles.tabTextActive]}>{s.label}</Text>
+                </Pressable>
+              );
+            })}
+          </View>
+
+          {/* Pager horizontal */}
+          <Animated.ScrollView
+            ref={pagerRef}
+            horizontal
+            pagingEnabled
+            showsHorizontalScrollIndicator={false}
+            onScroll={Animated.event([{ nativeEvent: { contentOffset: { x: scrollX } } }], { useNativeDriver: false })}
+            onMomentumScrollEnd={(e) => {
+              const idx = Math.round(e.nativeEvent.contentOffset.x / SCREEN_W);
+              setActiveIndex(Math.min(Math.max(idx, 0), SECTIONS.length - 1));
+            }}
+            scrollEventThrottle={16}
+            keyboardShouldPersistTaps="handled"
+            style={styles.pager}
+          >
+            {/* Page 0 - Usuários */}
+            <View style={[styles.page, { width: SCREEN_W }]}> 
+              <View style={styles.section}> 
+                <Text style={styles.sectionTitle}>Usuários</Text>
+                {query.trim().length < 2 ? (
+                  <Text style={styles.sectionHint}>Digite ao menos 2 caracteres para buscar.</Text>
+                ) : loading ? (
+                  <Text style={styles.sectionHint}>Carregando...</Text>
+                ) : error ? (
+                  <Text style={styles.sectionHint}>{error}</Text>
+                ) : users.length === 0 ? (
+                  <Text style={styles.sectionHint}>Nenhum usuário encontrado.</Text>
+                ) : (
+                  <FlatList
+                    data={users}
+                    keyExtractor={(it) => it._id}
+                    renderItem={({ item }) => (
+                      <ExploreUserCard item={item} anim={itemAnims.get(item._id) ?? new Animated.Value(1)} />
+                    )}
+                    ItemSeparatorComponent={() => <View style={{ height: 10 }} />}
+                    contentContainerStyle={{ paddingBottom: 12 }}
+                  />
+                )}
+              </View>
+            </View>
+
+            {/* Page 1 - Posts (placeholder) */}
+            <View style={[styles.page, { width: SCREEN_W }]}> 
+              <View style={styles.section}>
+                <Text style={styles.sectionTitle}>Posts</Text>
+                <ScrollView nestedScrollEnabled>
+                  <View style={styles.postsGrid}>
+                    {placeholderPosts.map((i) => (
+                      <View key={`post-${i}`} style={[styles.postBox, { backgroundColor: i % 5 === 0 ? COLORS.cyan : i % 3 === 0 ? COLORS.lilac : COLORS.blue }]} />
+                    ))}
+                  </View>
+                  <Text style={[styles.sectionHint, { marginBottom: 12 }]}>Feed em construção — em breve, posts reais aqui.</Text>
+                </ScrollView>
+              </View>
+            </View>
+
+            {/* Page 2 - Explorar (placeholder) */}
+            <View style={[styles.page, { width: SCREEN_W }]}> 
+              <View style={styles.section}>
+                <Text style={styles.sectionTitle}>Explorar</Text>
+                <Text style={styles.sectionHint}>Outras seções em breve: Tags, Áudio, Reels...</Text>
+                <View style={[styles.postsGrid, { marginTop: 12 }]}> 
+                  {placeholderPosts.slice(0, 9).map((i) => (
+                    <View key={`more-${i}`} style={[styles.postBox, { backgroundColor: i % 2 === 0 ? COLORS.cyan : COLORS.purple }]} />
+                  ))}
+                </View>
+              </View>
+            </View>
+          </Animated.ScrollView>
+        </>
+      )}
     </SafeAreaView>
   );
 }
@@ -405,6 +507,9 @@ const makeStyles = (COLORS: any) => ({
   section: {
     marginTop: 16,
   },
+  discoverWrap: {
+    marginTop: 10,
+  },
   sectionTitle: {
     color: COLORS.white,
     fontSize: 16,
@@ -415,6 +520,43 @@ const makeStyles = (COLORS: any) => ({
     color: 'rgba(255,255,255,0.7)',
     fontSize: 12,
     marginTop: 8,
+  },
+  chipsRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8 as any,
+  },
+  chip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6 as any,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.15)',
+    backgroundColor: 'rgba(255,255,255,0.04)',
+  },
+  chipText: {
+    color: COLORS.white,
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  exploreCta: {
+    borderRadius: 18,
+    overflow: 'hidden',
+  },
+  exploreCtaBg: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8 as any,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: 18,
+  },
+  exploreCtaText: {
+    color: COLORS.white,
+    fontWeight: '800',
   },
   userCard: {
     position: 'relative',

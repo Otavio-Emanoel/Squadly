@@ -1,4 +1,4 @@
-import { Schema, model, InferSchemaType } from 'mongoose';
+import { Schema, model, InferSchemaType, Types } from 'mongoose';
 
 const UserSchema = new Schema(
   {
@@ -25,6 +25,11 @@ const UserSchema = new Schema(
     },
     level: { type: Number, default: 1, min: 1 },
     xp: { type: Number, default: 0, min: 0 },
+    // Social graph
+    followers: [{ type: Schema.Types.ObjectId, ref: 'User', select: false }],
+    following: [{ type: Schema.Types.ObjectId, ref: 'User', select: false }],
+    followersCount: { type: Number, default: 0, min: 0 },
+    followingCount: { type: Number, default: 0, min: 0 },
   },
   { timestamps: true }
 );

@@ -1,5 +1,6 @@
 import { User } from '../models/User';
 import bcrypt from 'bcryptjs';
+import { Types } from 'mongoose';
 
 function slugifyUsername(input: string) {
   return input
@@ -200,4 +201,63 @@ export async function getPublicProfileByUsername(username: string): Promise<Publ
     )
     .lean();
   return (doc as any) ?? null;
+}
+
+export async function followUser(followerId: string, targetUsername: string) {
+  const followerObjectId = new Types.ObjectId(followerId);
+  const target = await User.findOne({ username: targetUsername.toLowerCase().trim() }).select('_id username').lean();
+  if (!target) {
+    const err = new Error('Usuário alvo não encontrado');
+    (err as any).status = 404;
+    throw err;
+  }
+  if (String(target._id) === String(followerId)) {
+    const err = new Error('Não é possível seguir a si mesmo');
+    (err as any).status = 400;
+    throw err;
+  }
+
+  // Adiciona relação se ainda não existe
+  const [updateFollower, updateTarget] = await Promise.all([
+    User.updateOne(
+      { _id: followerObjectId, following: { $ne: target._id } },
+      { $addToSet: { following: target._id }, $inc: { followingCount: 1 } }
+    ),
+    User.updateOne(
+      { _id: target._id, followers: { $ne: followerObjectId } },
+      { $addToSet: { followers: followerObjectId }, $inc: { followersCount: 1 } }
+    ),
+  ]);
+
+  const changed = (updateFollower.modifiedCount ?? 0) > 0 || (updateTarget.modifiedCount ?? 0) > 0;
+  return { ok: true, followed: changed, targetId: String(target._id) };
+}
+
+export async function unfollowUser(followerId: string, targetUsername: string) {
+  const followerObjectId = new Types.ObjectId(followerId);
+  const target = await User.findOne({ username: targetUsername.toLowerCase().trim() }).select('_id username').lean();
+  if (!target) {
+    const err = new Error('Usuário alvo não encontrado');
+    (err as any).status = 404;
+    throw err;
+  }
+  if (String(target._id) === String(followerId)) {
+    const err = new Error('Não é possível deixar de seguir a si mesmo');
+    (err as any).status = 400;
+    throw err;
+  }
+
+  const [updateFollower, updateTarget] = await Promise.all([
+    User.updateOne(
+      { _id: followerObjectId, following: target._id },
+      { $pull: { following: target._id }, $inc: { followingCount: -1 } }
+    ),
+    User.updateOne(
+      { _id: target._id, followers: followerObjectId },
+      { $pull: { followers: followerObjectId }, $inc: { followersCount: -1 } }
+    ),
+  ]);
+
+  const changed = (updateFollower.modifiedCount ?? 0) > 0 || (updateTarget.modifiedCount ?? 0) > 0;
+  return { ok: true, unfollowed: changed, targetId: String(target._id) };
 }

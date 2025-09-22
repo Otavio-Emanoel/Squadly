@@ -145,6 +145,38 @@ GET `/api/users/:username`
 { "message": "Usuário não encontrado" }
 ```
 
+### Seguir um usuário
+POST `/api/users/:username/follow`
+- Auth: sim (Bearer token)
+- 200
+```json
+{ "ok": true, "followed": true, "targetId": "665f1e2b4c..." }
+```
+- 400
+```json
+{ "message": "Não é possível seguir a si mesmo" }
+```
+- 404
+```json
+{ "message": "Usuário alvo não encontrado" }
+```
+
+### Deixar de seguir um usuário
+POST `/api/users/:username/unfollow`
+- Auth: sim (Bearer token)
+- 200
+```json
+{ "ok": true, "unfollowed": true, "targetId": "665f1e2b4c..." }
+```
+- 400
+```json
+{ "message": "Não é possível deixar de seguir a si mesmo" }
+```
+- 404
+```json
+{ "message": "Usuário alvo não encontrado" }
+```
+
 ### Cadastrar usuário
 POST `/api/users`
 - Auth: não
