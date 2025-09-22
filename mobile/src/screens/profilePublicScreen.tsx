@@ -7,6 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { getTheme, ThemeName } from '../theme/theme';
 import { useTheme } from '../theme/ThemeContext';
 import { api } from '../services/api';
+import { openChatWith } from '../services/chat';
 
 type PublicUser = {
   _id: string;
@@ -23,9 +24,20 @@ type PublicUser = {
   updatedAt?: string;
 };
 
-export default function ProfilePublicScreen({ username, onBack }: { username: string; onBack?: () => void }) {
+type Props = {
+  username: string;
+  token?: string; // opcional para manter compat parcial; mas necessário para seguir/mensagens
+  meUsername?: string; // para evitar mostrar botões no próprio perfil
+  onBack?: () => void;
+  onOpenChat?: (chatId: string, peer: { username: string; name?: string; icon?: string }) => void;
+};
+
+export default function ProfilePublicScreen({ username, token, meUsername, onBack, onOpenChat }: Props) {
   const { colors: appColors } = useTheme();
   const [user, setUser] = useState<PublicUser | null>(null);
+  const [isFollowing, setIsFollowing] = useState<boolean>(false);
+  const [relationshipLoading, setRelationshipLoading] = useState<boolean>(false);
+  const [actionLoading, setActionLoading] = useState<boolean>(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const menuAnim = useRef(new Animated.Value(0)).current; // 0 fechado, 1 aberto
@@ -52,6 +64,25 @@ export default function ProfilePublicScreen({ username, onBack }: { username: st
       mounted = false;
     };
   }, [username]);
+
+  // Busca relacionamento (é você? está seguindo?)
+  useEffect(() => {
+    let mounted = true;
+    if (!token) return; // sem token não dá para consultar relação
+    setRelationshipLoading(true);
+    (async () => {
+      try {
+        const res = await api<{ isMe: boolean; isFollowing: boolean }>(`/api/users/${encodeURIComponent(username)}/relationship`, { method: 'GET', authToken: token });
+        if (!mounted) return;
+        setIsFollowing(!!res.isFollowing);
+      } catch (e) {
+        // silencioso
+      } finally {
+        if (mounted) setRelationshipLoading(false);
+      }
+    })();
+    return () => { mounted = false; };
+  }, [username, token]);
 
   const styles = useMemo(() => StyleSheet.create(makeStyles(localColors)), [localColors]);
 
@@ -111,6 +142,32 @@ export default function ProfilePublicScreen({ username, onBack }: { username: st
     { key: 'copy', label: 'Copiar link', icon: 'link-outline' },
     { key: 'achievements', label: 'Ver conquistas', icon: 'trophy-outline' },
   ], []);
+
+  const isMe = (meUsername && user?.username) ? meUsername.toLowerCase() === user.username.toLowerCase() : false;
+
+  const handleFollow = async () => {
+    if (!token || !user || actionLoading) return;
+    setActionLoading(true);
+    try {
+      await api(`/api/users/${encodeURIComponent(user.username)}/follow`, { method: 'POST', authToken: token });
+      setIsFollowing(true);
+    } catch (e) {
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleUnfollow = async () => {
+    if (!token || !user || actionLoading) return;
+    setActionLoading(true);
+    try {
+      await api(`/api/users/${encodeURIComponent(user.username)}/unfollow`, { method: 'POST', authToken: token });
+      setIsFollowing(false);
+    } catch (e) {
+    } finally {
+      setActionLoading(false);
+    }
+  };
 
   return (
     <SafeAreaView style={styles.root}>
@@ -176,6 +233,38 @@ export default function ProfilePublicScreen({ username, onBack }: { username: st
           )}
           {error && (
             <Text style={[styles.status, { color: 'tomato' }]}>{error}</Text>
+          )}
+          {/* Ações: seguir/deixar de seguir/mensagem (não aparece no próprio perfil) */}
+          {!loading && !error && user && !isMe && (
+            <View style={styles.actionsRow}>
+              {!isFollowing ? (
+                <Pressable disabled={!token || actionLoading} onPress={handleFollow} style={({ pressed }) => [styles.primaryBtn, pressed && { opacity: 0.9 }]}>
+                  <Ionicons name="person-add-outline" size={16} color={localColors.white} style={{ marginRight: 6 }} />
+                  <Text style={styles.primaryBtnText}>{actionLoading ? '...' : 'Seguir'}</Text>
+                </Pressable>
+              ) : (
+                <Pressable disabled={!token || actionLoading} onPress={handleUnfollow} style={({ pressed }) => [styles.secondaryBtn, pressed && { opacity: 0.9 }]}>
+                  <Ionicons name="person-remove-outline" size={16} color={localColors.white} style={{ marginRight: 6 }} />
+                  <Text style={styles.secondaryBtnText}>{actionLoading ? '...' : 'Deixar de seguir'}</Text>
+                </Pressable>
+              )}
+              {isFollowing && (
+                <Pressable
+                  disabled={!token || !user}
+                  onPress={async () => {
+                    if (!token || !user) return;
+                    try {
+                      const res = await openChatWith(token, user.username);
+                      onOpenChat && onOpenChat(res.chat._id, { username: user.username, name: user.name, icon: user.icon });
+                    } catch {}
+                  }}
+                  style={({ pressed }) => [styles.messageBtn, pressed && { opacity: 0.9 }]}
+                >
+                  <Ionicons name="chatbubble-ellipses-outline" size={16} color={localColors.white} style={{ marginRight: 6 }} />
+                  <Text style={styles.messageBtnText}>Mensagem</Text>
+                </Pressable>
+              )}
+            </View>
           )}
           {/* Links */}
           {!!user?.links && (
@@ -502,6 +591,57 @@ const makeStyles = (COLORS: ReturnType<typeof getTheme>) => ({
   statsRow: {
     flexDirection: 'row' as const,
     justifyContent: 'space-around' as const,
+  },
+  actionsRow: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    gap: 10 as any,
+    marginTop: 14,
+  },
+  primaryBtn: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 12,
+    backgroundColor: 'rgba(255,255,255,0.12)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.22)',
+  },
+  primaryBtnText: {
+    color: COLORS.white,
+    fontWeight: '800' as const,
+    fontSize: 13,
+  },
+  secondaryBtn: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 12,
+    backgroundColor: 'rgba(255,255,255,0.06)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.16)',
+  },
+  secondaryBtnText: {
+    color: COLORS.white,
+    fontWeight: '800' as const,
+    fontSize: 13,
+  },
+  messageBtn: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 12,
+    backgroundColor: 'rgba(140, 200, 255, 0.12)',
+    borderWidth: 1,
+    borderColor: 'rgba(140, 200, 255, 0.28)',
+  },
+  messageBtnText: {
+    color: COLORS.white,
+    fontWeight: '800' as const,
+    fontSize: 13,
   },
   menuBackdrop: {
     ...StyleSheet.absoluteFillObject as any,

@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { createUser, listUsers, updateProfile, getPublicProfileByUsername, followUser, unfollowUser } from '../services/user.service';
+import { User } from '../models/User';
 
 export class UserController {
   async index(req: Request, res: Response) {
@@ -76,6 +77,26 @@ export class UserController {
     } catch (err: any) {
       const status = err?.status || 500;
       return res.status(status).json({ message: err?.message || 'Erro ao deixar de seguir usuário' });
+    }
+  }
+
+  async relationship(req: Request, res: Response) {
+    try {
+      if (!req.user?.id) return res.status(401).json({ message: 'Não autorizado' });
+      const { username } = req.params as { username?: string };
+      if (!username || !username.trim()) return res.status(400).json({ message: 'username é obrigatório' });
+      const target = await User.findOne({ username: username.toLowerCase().trim() }).select('_id username').lean();
+      if (!target) return res.status(404).json({ message: 'Usuário alvo não encontrado' });
+      const isMe = String(target._id) === String(req.user.id);
+      let isFollowing = false;
+      if (!isMe) {
+        const exists = await User.exists({ _id: req.user.id, following: (target as any)._id });
+        isFollowing = !!exists;
+      }
+      return res.json({ isMe, isFollowing });
+    } catch (err: any) {
+      const status = err?.status || 500;
+      return res.status(status).json({ message: err?.message || 'Erro ao consultar relacionamento' });
     }
   }
 }

@@ -20,4 +20,7 @@ chatRouter.post('/:chatId/messages', auth, (req: Request, res: Response) => chat
 // Edita mensagem (até 15 minutos após envio)
 chatRouter.patch('/messages/:messageId', auth, (req: Request, res: Response) => chatController.edit(req, res));
 
+// Marca mensagens como vistas (até uma mensagem específica opcionalmente)
+chatRouter.post('/:chatId/seen', auth, (req: Request, res: Response) => chatController.seen(req, res));
+
 export { chatRouter };

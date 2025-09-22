@@ -15,15 +15,11 @@ Status comuns
 
 ---
 
-## Health
 GET `/health`
 - Auth: não
 - Body: —
 { "status": "ok", "env": "development" }
 ```
-
-
-## Raiz da API
 GET `/api`
 - Auth: não
 - Body: —
@@ -42,6 +38,21 @@ GET `/api/ping`
 PATCH `/api/users/me`
 - Auth: sim (Bearer token)
 - Body (qualquer combinação dos campos abaixo):
+ 
+## Visto (mensagens)
+
+### Marcar mensagens como vistas
+POST `/api/chats/:chatId/seen`
+- Auth: sim (Bearer token)
+- Body (opcional)
+```json
+{ "upToMessageId": "<messageId>" }
+```
+- 200
+```json
+{ "ok": true, "matched": 12, "modified": 10 }
+```
+
 ```json
 {
   "username": "seu_username_unico",
@@ -177,6 +188,18 @@ POST `/api/users/:username/unfollow`
 { "message": "Usuário alvo não encontrado" }
 ```
 
+### Relacionamento com um usuário (seguindo? é você?)
+GET `/api/users/:username/relationship`
+- Auth: sim (Bearer token)
+- 200
+```json
+{ "isMe": false, "isFollowing": true }
+```
+- 404
+```json
+{ "message": "Usuário alvo não encontrado" }
+```
+
 ### Cadastrar usuário
 POST `/api/users`
 - Auth: não
@@ -289,7 +312,22 @@ GET `/api/chats`
 - Query (opcionais): `page`, `limit`
 - 200
 ```json
-{ "data": [ { "_id": "...", "participants": ["...","..."], "lastMessageAt": "2025-09-22T12:00:00.000Z", "lastMessagePreview": "Oi", "messageCount": 12 } ], "page": 1, "limit": 20, "total": 1, "totalPages": 1 }
+{
+  "data": [
+    {
+      "_id": "...",
+      "participants": ["meId","otherId"],
+      "lastMessageAt": "2025-09-22T12:00:00.000Z",
+      "lastMessagePreview": "Oi",
+      "messageCount": 12,
+      "otherUser": { "_id": "otherId", "username": "ada", "name": "Ada Lovelace", "icon": "rocket" }
+    }
+  ],
+  "page": 1,
+  "limit": 20,
+  "total": 1,
+  "totalPages": 1
+}
 ```
 
 ### Abrir (ou criar) chat com um usuário

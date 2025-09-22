@@ -13,5 +13,6 @@ userRouter.patch('/me', auth, (req: Request, res: Response) => userController.up
 // seguir / deixar de seguir
 userRouter.post('/:username/follow', auth, (req: Request, res: Response) => userController.follow(req, res));
 userRouter.post('/:username/unfollow', auth, (req: Request, res: Response) => userController.unfollow(req, res));
+userRouter.get('/:username/relationship', auth, (req: Request, res: Response) => userController.relationship(req, res));
 
 export { userRouter };

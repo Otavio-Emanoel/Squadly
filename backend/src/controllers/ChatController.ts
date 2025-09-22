@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { editMessage, getOrCreateChat, listChats, listMessages, sendMessage } from '../services/chat.service';
+import { editMessage, getOrCreateChat, listChats, listMessages, sendMessage, markMessagesSeen } from '../services/chat.service';
 
 export class ChatController {
   async myChats(req: Request, res: Response) {
@@ -58,6 +58,18 @@ export class ChatController {
       return res.json({ message: msg });
     } catch (err: any) {
       return res.status(err?.status || 500).json({ message: err?.message || 'Erro ao editar mensagem' });
+    }
+  }
+
+  async seen(req: Request, res: Response) {
+    try {
+      if (!req.user?.id) return res.status(401).json({ message: 'Não autorizado' });
+      const { chatId } = req.params as any;
+      const { upToMessageId } = req.body as any;
+      const result = await markMessagesSeen(req.user.id, chatId, upToMessageId);
+      return res.json({ ok: true, ...result });
+    } catch (err: any) {
+      return res.status(err?.status || 500).json({ message: err?.message || 'Erro ao marcar mensagens como vistas' });
     }
   }
 }

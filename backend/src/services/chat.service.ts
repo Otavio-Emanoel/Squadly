@@ -41,7 +41,28 @@ export async function listChats(userId: string, { page = 1, limit = 20 }: { page
       .lean(),
     Chat.countDocuments({ participants: userId }),
   ]);
-  return { data, page: p, limit: l, total, totalPages: Math.ceil(total / l) || 1 };
+
+  // Enriquecer com info mínima do "outro" participante (1:1 chats)
+  const otherIds = Array.from(
+    new Set(
+      data
+        .map((c) => (c.participants as any[]).map(String).find((pid) => pid !== String(userId)))
+        .filter((v): v is string => !!v)
+    )
+  );
+  const users = otherIds.length
+    ? await User.find({ _id: { $in: otherIds } })
+        .select('_id username name icon')
+        .lean()
+    : [];
+  const userMap = new Map(users.map((u: any) => [String(u._id), { _id: String(u._id), username: u.username, name: u.name, icon: u.icon }]));
+  const enriched = data.map((c: any) => {
+    const otherId = (c.participants as any[]).map(String).find((pid) => pid !== String(userId));
+    const otherUser = otherId ? userMap.get(String(otherId)) : undefined;
+    return { ...c, otherUser };
+  });
+
+  return { data: enriched, page: p, limit: l, total, totalPages: Math.ceil(total / l) || 1 };
 }
 
 export async function sendMessage(userId: string, chatId: string, content: string) {
@@ -130,4 +151,31 @@ export async function listMessages(userId: string, chatId: string, { page = 1, l
   // retornamos em ordem cronológica (asc) para exibição fácil
   data.reverse();
   return { data, page: p, limit: l, total, totalPages: Math.ceil(total / l) || 1 };
+}
+
+export async function markMessagesSeen(userId: string, chatId: string, upToMessageId?: string) {
+  const chat = await Chat.findById(chatId).lean();
+  if (!chat) {
+    const err = new Error('Chat não encontrado');
+    (err as any).status = 404;
+    throw err;
+  }
+  if (!chat.participants.map(String).includes(String(userId))) {
+    const err = new Error('Sem permissão neste chat');
+    (err as any).status = 403;
+    throw err;
+  }
+  const filter: any = { chat: chatId, sender: { $ne: userId } };
+  if (upToMessageId) {
+    // Marcar até a mensagem informada (inclusive)
+    const upTo = await Message.findById(upToMessageId).select('createdAt chat').lean();
+    if (!upTo || String(upTo.chat) !== String(chatId)) {
+      const err = new Error('Mensagem alvo inválida');
+      (err as any).status = 400;
+      throw err;
+    }
+    filter.createdAt = { $lte: upTo.createdAt };
+  }
+  const result = await Message.updateMany(filter, { $addToSet: { seenBy: userId } });
+  return { matched: result.matchedCount ?? (result as any).n, modified: result.modifiedCount ?? (result as any).nModified };
 }
