@@ -278,3 +278,61 @@ GET `/api/auth/me`
 
 Notas
 - Este documento deve ser atualizado a cada novo endpoint ou alteração de contrato.
+
+---
+
+## Chats e Mensagens
+
+### Listar meus chats
+GET `/api/chats`
+- Auth: sim (Bearer token)
+- Query (opcionais): `page`, `limit`
+- 200
+```json
+{ "data": [ { "_id": "...", "participants": ["...","..."], "lastMessageAt": "2025-09-22T12:00:00.000Z", "lastMessagePreview": "Oi", "messageCount": 12 } ], "page": 1, "limit": 20, "total": 1, "totalPages": 1 }
+```
+
+### Abrir (ou criar) chat com um usuário
+POST `/api/chats/with/:username`
+- Auth: sim (Bearer token)
+- 200
+```json
+{ "chat": { "_id": "...", "participants": ["me","other"], "participantsKey": "me:other" } }
+```
+
+### Listar mensagens de um chat
+GET `/api/chats/:chatId/messages`
+- Auth: sim (Bearer token)
+- Query (opcionais): `page`, `limit`
+- 200
+```json
+{ "data": [ { "_id": "...", "chat": "...", "sender": "...", "content": "Olá", "createdAt": "...", "editedAt": null } ], "page": 1, "limit": 40, "total": 1, "totalPages": 1 }
+```
+
+### Enviar mensagem
+POST `/api/chats/:chatId/messages`
+- Auth: sim (Bearer token)
+- Body
+```json
+{ "content": "texto da mensagem" }
+```
+- 201
+```json
+{ "message": { "_id": "...", "chat": "...", "sender": "...", "content": "texto da mensagem", "createdAt": "..." } }
+```
+
+### Editar mensagem (até 15 minutos)
+PATCH `/api/chats/messages/:messageId`
+- Auth: sim (Bearer token)
+- Body
+```json
+{ "content": "mensagem editada" }
+```
+- 200
+```json
+{ "message": { "_id": "...", "content": "mensagem editada", "editedAt": "..." } }
+```
+- 400
+```json
+{ "message": "Janela de edição expirada" }
+```
