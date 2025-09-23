@@ -166,6 +166,7 @@ export type PublicProfile = Pick<
   name: string;
   username: string;
   icon: string;
+  photoUrl?: string;
   status: string;
   bio: string;
   links: {
@@ -197,7 +198,7 @@ export type PublicProfile = Pick<
 export async function getPublicProfileByUsername(username: string): Promise<PublicProfile | null> {
   const doc = await User.findOne({ username: username.toLowerCase().trim() })
     .select(
-      '_id name username icon status bio links theme level xp createdAt updatedAt' as any,
+      '_id name username icon photoUrl status bio links theme level xp createdAt updatedAt' as any,
     )
     .lean();
   return (doc as any) ?? null;

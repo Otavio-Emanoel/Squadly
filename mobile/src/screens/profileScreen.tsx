@@ -317,7 +317,15 @@ export default function ProfileScreen({ token, onEditProfile, onLogout }: Profil
                         </View>
                         <View style={styles.heroTopRow}>
                             <View style={styles.bigAvatarWrap}>
-                                <Image source={require('../assets/user.png')} style={styles.bigAvatarImg} resizeMode="cover" />
+                                {user?.photoUrl ? (
+                                    <Image
+                                        source={{ uri: `${process.env.EXPO_PUBLIC_API_URL}${user.photoUrl}` }}
+                                        style={styles.bigAvatarImg}
+                                        resizeMode="cover"
+                                    />
+                                ) : (
+                                    <Image source={require('../assets/user.png')} style={styles.bigAvatarImg} resizeMode="cover" />
+                                )}
                             </View>
                             <View style={{ flex: 1 }}>
                                 <Text style={styles.name}>{user?.name ?? 'Explorador'}</Text>

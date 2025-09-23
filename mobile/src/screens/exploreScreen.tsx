@@ -17,6 +17,7 @@ type UserItem = {
   email?: string;
   username?: string;
   icon?: string;
+  photoUrl?: string;
   status?: string;
   theme?: string;
 };
@@ -225,7 +226,15 @@ export default function ExploreScreen({ token, onOpenUser }: ExploreScreenProps 
           <View style={styles.userAvatarWrap}>
             <LinearGradient colors={[COLORS.cyan, COLORS.lilac]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.userAvatarRing}>
               <View style={styles.userAvatarInner}>
-                <Ionicons name={(item.icon as any) || 'planet'} size={20} color={COLORS.white} />
+                {item.photoUrl ? (
+                  <Animated.Image
+                    source={{ uri: `${process.env.EXPO_PUBLIC_API_URL}${item.photoUrl}` }}
+                    style={{ width: 36, height: 36, borderRadius: 18 }}
+                    resizeMode="cover"
+                  />
+                ) : (
+                  <Ionicons name={(item.icon as any) || 'planet'} size={20} color={COLORS.white} />
+                )}
               </View>
             </LinearGradient>
           </View>

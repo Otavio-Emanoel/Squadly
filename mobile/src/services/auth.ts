@@ -15,6 +15,7 @@ export type User = {
   email: string;
   username?: string;
   icon?: string;
+  photoUrl?: string;
   status?: string;
   bio?: string;
   links?: UserLinks;

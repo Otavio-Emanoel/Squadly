@@ -1,10 +1,12 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Animated, Dimensions, Easing, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View, Keyboard, UIManager, KeyboardAvoidingView } from 'react-native';
+import { Animated, Dimensions, Easing, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View, Keyboard, UIManager, KeyboardAvoidingView, Image } from 'react-native';
 import { BlurView } from 'expo-blur';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import ConnectionBadge from '../components/ConnectionBadge';
 import { getMe, updateProfile, User } from '../services/auth';
 import { THEMES, getTheme, ThemeName } from '../theme/theme';
+import * as ImagePicker from 'expo-image-picker';
+import { uploadProfilePhoto } from '../services/users';
 
 const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
 
@@ -37,6 +39,8 @@ export default function ProfileEditScreen({ token, onBack, onSaved }: ProfileEdi
   const [theme, setTheme] = useState<User['theme']>('earth');
   const [phone, setPhone] = useState('');
   const [links, setLinks] = useState<User['links']>({});
+  const [photoUrl, setPhotoUrl] = useState<string | undefined>(undefined);
+  const [uploading, setUploading] = useState(false);
 
   // visual seletor de categorias de links
   const linkCategories = ['github','linkedin','instagram','telegram','discord','website'] as const;
@@ -55,13 +59,15 @@ export default function ProfileEditScreen({ token, onBack, onSaved }: ProfileEdi
       try {
         const me = await getMe(token);
         setUser(me.user);
-        setUsername(me.user.username || '');
+  setUsername(me.user.username || '');
         setStatus(me.user.status || '');
         setBio(me.user.bio || '');
         setIcon(me.user.icon || 'planet');
         setTheme(me.user.theme || 'earth');
         setPhone(me.user.phone || '');
         setLinks(me.user.links || {});
+  // se backend já retornar photoUrl via /auth/me, persistimos no estado local
+  setPhotoUrl(me.user.photoUrl || undefined);
         // selecionar automaticamente chips que já possuem valor (telefone + links existentes)
         const selected = new Set<string>();
         if (me.user.phone && String(me.user.phone).trim().length > 0) {
@@ -138,6 +144,37 @@ export default function ProfileEditScreen({ token, onBack, onSaved }: ProfileEdi
       setError(e?.message || 'Erro ao salvar');
     } finally {
       setSaving(false);
+    }
+  };
+
+  const pickPhoto = async () => {
+    setError(null);
+    try {
+      // Verifica permissão atual e solicita se necessário
+      let perm = await ImagePicker.getMediaLibraryPermissionsAsync();
+      if (perm.status !== 'granted') {
+        perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      }
+      if (perm.status !== 'granted') {
+        setError('Permissão para acessar a galeria negada. Vá em Ajustes e permita o acesso às fotos.');
+        return;
+      }
+      const result = await ImagePicker.launchImageLibraryAsync({
+        quality: 0.9,
+        allowsEditing: true,
+        aspect: [1, 1],
+        exif: false,
+      });
+      if (result.canceled) return;
+      const uri = result.assets?.[0]?.uri;
+      if (!uri) return;
+      setUploading(true);
+      const res = await uploadProfilePhoto(token, uri);
+      setPhotoUrl(res.photoUrl);
+    } catch (e: any) {
+      setError(e?.message || 'Falha ao selecionar/enviar foto');
+    } finally {
+      setUploading(false);
     }
   };
 
@@ -244,6 +281,19 @@ export default function ProfileEditScreen({ token, onBack, onSaved }: ProfileEdi
           {/* Identidade */}
           <BlurView intensity={80} tint="dark" style={styles.card}>
             <Text style={styles.sectionTitle}>Identidade</Text>
+            {/* Foto de perfil */}
+            <View style={{ alignItems: 'center', marginBottom: 8 }}>
+              <View style={{ width: 92, height: 92, borderRadius: 48, borderWidth: 1, borderColor: hexToRgba(COLORS.white, 0.16), backgroundColor: hexToRgba(COLORS.white, 0.06), alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
+                {photoUrl ? (
+                  <Image source={{ uri: `${process.env.EXPO_PUBLIC_API_URL}${photoUrl}` }} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
+                ) : (
+                  <Ionicons name="person-circle-outline" size={64} color={hexToRgba(COLORS.white, 0.6)} />
+                )}
+              </View>
+              <Pressable onPress={pickPhoto} disabled={uploading} style={({ pressed }) => [{ marginTop: 10, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 10, borderWidth: 1, borderColor: hexToRgba(COLORS.white, 0.18), backgroundColor: hexToRgba(COLORS.white, 0.06) }, pressed && { opacity: 0.85 } ]}>
+                <Text style={{ color: COLORS.white, fontWeight: '700' }}>{uploading ? 'Enviando...' : (photoUrl ? 'Trocar foto' : 'Adicionar foto')}</Text>
+              </Pressable>
+            </View>
             <View style={styles.row}>
               <View style={{ flex: 1 }}>
                 <Text style={styles.label}>Nome</Text>

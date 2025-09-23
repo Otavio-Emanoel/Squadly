@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View, Animated, Easing } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View, Animated, Easing, Image } from 'react-native';
 import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
 import Ionicons from '@expo/vector-icons/Ionicons';
@@ -14,6 +14,7 @@ type PublicUser = {
   name: string;
   username: string;
   icon?: string;
+  photoUrl?: string;
   status?: string;
   bio?: string;
   links?: Partial<{ github: string; linkedin: string; instagram: string; telegram: string; discord: string; website: string }>;
@@ -214,7 +215,15 @@ export default function ProfilePublicScreen({ username, token, meUsername, onBac
           <View style={styles.avatarWrap}>
             <View style={[styles.avatarRing, { borderColor: localColors.cyan }]}> 
               <View style={styles.avatarInner}>
-                <Ionicons name={(user?.icon as any) || 'planet'} size={28} color={localColors.white} />
+                {user?.photoUrl ? (
+                  <Image
+                    source={{ uri: `${process.env.EXPO_PUBLIC_API_URL}${user.photoUrl}` }}
+                    style={{ width: '100%', height: '100%', borderRadius: 40 }}
+                    resizeMode="cover"
+                  />
+                ) : (
+                  <Ionicons name={(user?.icon as any) || 'planet'} size={28} color={localColors.white} />
+                )}
               </View>
             </View>
           </View>
