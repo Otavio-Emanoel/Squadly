@@ -27,7 +27,7 @@ function AppInner() {
   const [token, setToken] = useState<string | null>(null);
   const [meUsername, setMeUsername] = useState<string | null>(null);
   const [meId, setMeId] = useState<string | null>(null);
-  const [screen, setScreen] = useState<'home' | 'kanban' | 'profile' | 'profileEdit' | 'spaceStack' | 'explore' | 'profilePublic' | 'messages' | 'chat'>('home');
+  const [screen, setScreen] = useState<'home' | 'kanban' | 'profile' | 'profileEdit' | 'spaceStack' | 'explore' | 'profilePublic' | 'messages' | 'chat' | 'squadCam'>('home');
   const [publicUsername, setPublicUsername] = useState<string | null>(null);
   const [activeChat, setActiveChat] = useState<{ chatId: string; peer: { username?: string; name?: string; icon?: string } } | null>(null);
   const { setTheme } = useTheme();
@@ -153,11 +153,17 @@ function AppInner() {
             setScreen('profile');
           }}
           onOpenSpaceStack={() => setScreen('spaceStack')}
+          onOpenSquadCam={() => setScreen('squadCam')}
         />
       ) : screen === 'kanban' ? (
         <KanbanScreen onBack={() => setScreen('home')} />
       ) : screen === 'spaceStack' ? (
         <SpaceStackScreen onBack={() => setScreen('home')} />
+      ) : screen === 'squadCam' ? (
+        (() => {
+          const SquadCamScreen = require('./screens/squadCamScreen').default as any;
+          return <SquadCamScreen onBack={() => setScreen('home')} />;
+        })()
       ) : screen === 'explore' ? (
         <ExploreScreen token={token!} onOpenUser={(username) => { setPublicUsername(username); setScreen('profilePublic'); }} />
       ) : screen === 'profilePublic' ? (
@@ -206,7 +212,7 @@ function AppInner() {
         <ProfileEditScreen token={token!} onBack={() => setScreen('profile')} onSaved={() => setScreen('profile')} />
       )}
       {/* Navbar persistente (sempre visível) */}
-  {logged && screen !== 'kanban' && screen !== 'spaceStack' && screen !== 'chat' && (
+  {logged && screen !== 'kanban' && screen !== 'spaceStack' && screen !== 'chat' && screen !== 'squadCam' && (
         <Animated.View
           style={{ position: 'absolute', left: 16, right: 16, bottom: 18, opacity: animNavbar, transform: [{ translateY: animNavbar.interpolate({ inputRange: [0,1], outputRange: [20,0] }) }] }}
           pointerEvents="box-none"

@@ -26,7 +26,7 @@ function useStarfield(total = 100, COLORS: any) {
       const layer = Math.random();
       const size = layer < 0.5 ? Math.random() * 1.5 + 0.5 : Math.random() * 2.4 + 0.6;
       const speed = layer < 0.4 ? 8 : layer < 0.75 ? 16 : 28;
-  const color = Math.random() > 0.82 ? COLORS.lilac : COLORS.white;
+      const color = Math.random() > 0.82 ? COLORS.lilac : COLORS.white;
       const startX = Math.random() * SCREEN_W;
       const y = Math.random() * SCREEN_H;
       stars.push({
@@ -74,9 +74,10 @@ export type HomeScreenProps = {
   onOpenKanban?: () => void;
   onOpenProfile?: () => void;
   onOpenSpaceStack?: () => void;
+  onOpenSquadCam?: () => void;
 };
 
-export default function HomeScreen({ token, onLogout, onOpenKanban, onOpenProfile, onOpenSpaceStack }: HomeScreenProps) {
+export default function HomeScreen({ token, onLogout, onOpenKanban, onOpenProfile, onOpenSpaceStack, onOpenSquadCam }: HomeScreenProps) {
   const { colors: COLORS, setTheme } = useTheme();
   const stars = useStarfield(110, COLORS);
   const [user, setUser] = useState<User | null>(null);
@@ -122,7 +123,7 @@ export default function HomeScreen({ token, onLogout, onOpenKanban, onOpenProfil
     ).start();
 
     // Cometa removido
-    return () => {};
+    return () => { };
   }, [planetScale]);
 
   // Entrada em cascata
@@ -191,17 +192,27 @@ export default function HomeScreen({ token, onLogout, onOpenKanban, onOpenProfil
       percentBadge: 'NOVIDADE',
       image: require('../assets/spacestack.png'),
       imageSide: 'left',
-  gradient: [COLORS.cyan, COLORS.blue],
+      gradient: [COLORS.cyan, COLORS.blue],
       onPress: () => leaveAndNavigate(() => onOpenSpaceStack?.()),
     },
     {
       id: '3',
+      title: 'SquadCam',
+      subtitle: 'Camera com filtros espaciais',
+      percentBadge: '📸',
+      image: require('../assets/camera.png'),
+      imageSide: 'right',
+      gradient: ['#150D1C', '#434F6B'],
+      onPress: () => leaveAndNavigate(() => onOpenSquadCam?.()),
+    },
+    {
+      id: '4',
       title: 'Templates de Squads',
       subtitle: 'Comece rápido com modelos prontos',
       percentBadge: '🔥',
       image: require('../assets/splash-icon.png'),
-      imageSide: 'right',
-  gradient: [COLORS.cyan, COLORS.purple],
+      imageSide: 'left',
+      gradient: [COLORS.cyan, COLORS.purple],
       onPress: () => Alert.alert('Em breve', 'Templates em desenvolvimento.'),
     },
   ];
@@ -243,8 +254,8 @@ export default function HomeScreen({ token, onLogout, onOpenKanban, onOpenProfil
       ))}
 
       {/* Nebulosas para profundidade */}
-  <View pointerEvents="none" style={[styles.nebula, { backgroundColor: COLORS.purple, top: SCREEN_H * 0.08, left: -90 }]} />
-  <View pointerEvents="none" style={[styles.nebula, { backgroundColor: COLORS.blue, bottom: SCREEN_H * 0.12, right: -70 }]} />
+      <View pointerEvents="none" style={[styles.nebula, { backgroundColor: COLORS.purple, top: SCREEN_H * 0.08, left: -90 }]} />
+      <View pointerEvents="none" style={[styles.nebula, { backgroundColor: COLORS.blue, bottom: SCREEN_H * 0.12, right: -70 }]} />
 
       {/* Planeta decorativo */}
       <Animated.View pointerEvents="none" style={[styles.planet, { transform: [{ scale: planetScale }] }]}>
@@ -255,7 +266,7 @@ export default function HomeScreen({ token, onLogout, onOpenKanban, onOpenProfil
       {/* Cometa removido */}
 
       {/* Conteúdo principal */}
-  <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <Animated.View
           style={{
             opacity: animHeader,
@@ -263,9 +274,9 @@ export default function HomeScreen({ token, onLogout, onOpenKanban, onOpenProfil
           }}
         >
           <BlurView style={styles.headerCard} intensity={80} tint="dark">
-          <View style={styles.glare} />
-          <Text style={styles.headerTitle}>{greet}</Text>
-          <Text style={styles.headerSubtitle}>{loading ? 'Carregando...' : error || subtitle}</Text>
+            <View style={styles.glare} />
+            <Text style={styles.headerTitle}>{greet}</Text>
+            <Text style={styles.headerSubtitle}>{loading ? 'Carregando...' : error || subtitle}</Text>
           </BlurView>
         </Animated.View>
 
@@ -285,27 +296,27 @@ export default function HomeScreen({ token, onLogout, onOpenKanban, onOpenProfil
           }}
         >
           <View style={styles.grid}>
-          <ActionCard
-            title="Criar Squad"
-            description="Monte uma nova tripulação e defina objetivos"
-            color={COLORS.cyan}
-            COLORS={COLORS}
-            onPress={() => Alert.alert('Em breve', 'Funcionalidade de criação de squad em desenvolvimento.')} 
-          />
-          <ActionCard
-            title="Minhas Tarefas"
-            description="Veja e priorize missões do dia"
-            color={COLORS.lilac}
-            COLORS={COLORS}
-            onPress={() => Alert.alert('Em breve', 'Lista de tarefas em desenvolvimento.')} 
-          />
-          <ActionCard
-            title="Explorar"
-            description="Descubra novas constelações de produtividade"
-            color={COLORS.blue}
-            COLORS={COLORS}
-            onPress={() => Alert.alert('Explorar', 'Nada como explorar o universo...')} 
-          />
+            <ActionCard
+              title="Criar Squad"
+              description="Monte uma nova tripulação e defina objetivos"
+              color={COLORS.cyan}
+              COLORS={COLORS}
+              onPress={() => Alert.alert('Em breve', 'Funcionalidade de criação de squad em desenvolvimento.')}
+            />
+            <ActionCard
+              title="Minhas Tarefas"
+              description="Veja e priorize missões do dia"
+              color={COLORS.lilac}
+              COLORS={COLORS}
+              onPress={() => Alert.alert('Em breve', 'Lista de tarefas em desenvolvimento.')}
+            />
+            <ActionCard
+              title="Explorar"
+              description="Descubra novas constelações de produtividade"
+              color={COLORS.blue}
+              COLORS={COLORS}
+              onPress={() => Alert.alert('Explorar', 'Nada como explorar o universo...')}
+            />
           </View>
         </Animated.View>
 
@@ -346,7 +357,7 @@ function ActionCard({ title, description, onPress, color, COLORS }: { title: str
           borderWidth: 1,
           borderColor: 'rgba(255,255,255,0.12)'
         }, pressed && { opacity: 0.9 }]}
-      > 
+      >
         <Text style={{ color: COLORS.white, fontWeight: '700' }}>Abrir</Text>
       </Pressable>
     </BlurView>
@@ -355,124 +366,124 @@ function ActionCard({ title, description, onPress, color, COLORS }: { title: str
 
 function makeStyles(COLORS: any) {
   return {
-  root: { flex: 1, backgroundColor: COLORS.bg },
-  badgeWrap: {
-    position: 'absolute',
-    top: 35,
-    right: 14,
-    zIndex: 50,
-  },
-  navbarWrap: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    bottom: 18,
-    alignItems: 'center',
-    zIndex: 20,
-    // paddingHorizontal: 16 se quiser mais espaçamento lateral
-  },
-  nebula: {
-    position: 'absolute',
-    width: 360,
-    height: 360,
-    borderRadius: 180,
-    opacity: 0.08,
-  },
-  planet: {
-    position: 'absolute',
-    top: SCREEN_H * 0.18,
-    right: -80,
-    width: 200,
-    height: 200,
-    borderRadius: 100,
-    backgroundColor: 'rgba(100, 223, 223, 0.12)',
-  },
-  planetCore: {
-    position: 'absolute',
-    top: 20,
-    left: 20,
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    backgroundColor: 'rgba(168, 164, 255, 0.18)',
-  },
-  planetRing: {
-    position: 'absolute',
-    bottom: 56,
-    left: -30,
-    width: 260,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: 'rgba(241,250,238,0.08)',
-    transform: [{ rotateZ: '-18deg' }],
-  },
-  content: {
-    padding: 20,
-    paddingTop: 60,
-    paddingBottom: 140, // espaço extra para não colidir com a navbar ao final
-    gap: 16,
-  },
-  headerCard: {
-    borderRadius: 20,
-    padding: 20,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.16)',
-    overflow: 'hidden',
-  },
-  glare: {
-    position: 'absolute',
-    top: -40,
-    left: -40,
-    width: 220,
-    height: 120,
-    borderRadius: 80,
-    backgroundColor: COLORS.white,
-    opacity: 0.06,
-    transform: [{ rotateZ: '-15deg' }],
-  },
-  headerTitle: { color: COLORS.white, fontSize: 24, fontWeight: '800', letterSpacing: 0.5 },
-  headerSubtitle: { color: COLORS.lilac, marginTop: 6 },
-  grid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 12,
-  },
-  card: {
-    width: (SCREEN_W - 20 * 2 - 12) / 2,
-    borderRadius: 16,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.14)',
-  },
-  pill: {
-    width: 24,
-    height: 6,
-    borderRadius: 3,
-    marginBottom: 10,
-    opacity: 0.9,
-  },
-  cardTitle: { color: COLORS.white, fontWeight: '800', fontSize: 16 },
-  cardDesc: { color: 'rgba(241,250,238,0.75)', fontSize: 12, marginTop: 4, minHeight: 36 },
-  cardBtn: {
-    backgroundColor: 'rgba(61, 90, 128, 0.55)',
-    paddingVertical: 10,
-    borderRadius: 10,
-    alignItems: 'center',
-    marginTop: 10,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.12)'
-  },
-  cardBtnText: { color: COLORS.white, fontWeight: '700' },
-  logoutBtn: {
-    alignSelf: 'center',
-    marginTop: 8,
-    paddingVertical: 12,
-    paddingHorizontal: 18,
-    borderRadius: 12,
-    backgroundColor: 'rgba(157, 78, 221, 0.3)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.16)'
-  },
-  logoutText: { color: COLORS.white, fontWeight: '700' },
+    root: { flex: 1, backgroundColor: COLORS.bg },
+    badgeWrap: {
+      position: 'absolute',
+      top: 35,
+      right: 14,
+      zIndex: 50,
+    },
+    navbarWrap: {
+      position: 'absolute',
+      left: 0,
+      right: 0,
+      bottom: 18,
+      alignItems: 'center',
+      zIndex: 20,
+      // paddingHorizontal: 16 se quiser mais espaçamento lateral
+    },
+    nebula: {
+      position: 'absolute',
+      width: 360,
+      height: 360,
+      borderRadius: 180,
+      opacity: 0.08,
+    },
+    planet: {
+      position: 'absolute',
+      top: SCREEN_H * 0.18,
+      right: -80,
+      width: 200,
+      height: 200,
+      borderRadius: 100,
+      backgroundColor: 'rgba(100, 223, 223, 0.12)',
+    },
+    planetCore: {
+      position: 'absolute',
+      top: 20,
+      left: 20,
+      width: 120,
+      height: 120,
+      borderRadius: 60,
+      backgroundColor: 'rgba(168, 164, 255, 0.18)',
+    },
+    planetRing: {
+      position: 'absolute',
+      bottom: 56,
+      left: -30,
+      width: 260,
+      height: 40,
+      borderRadius: 20,
+      backgroundColor: 'rgba(241,250,238,0.08)',
+      transform: [{ rotateZ: '-18deg' }],
+    },
+    content: {
+      padding: 20,
+      paddingTop: 60,
+      paddingBottom: 140, // espaço extra para não colidir com a navbar ao final
+      gap: 16,
+    },
+    headerCard: {
+      borderRadius: 20,
+      padding: 20,
+      borderWidth: 1,
+      borderColor: 'rgba(255,255,255,0.16)',
+      overflow: 'hidden',
+    },
+    glare: {
+      position: 'absolute',
+      top: -40,
+      left: -40,
+      width: 220,
+      height: 120,
+      borderRadius: 80,
+      backgroundColor: COLORS.white,
+      opacity: 0.06,
+      transform: [{ rotateZ: '-15deg' }],
+    },
+    headerTitle: { color: COLORS.white, fontSize: 24, fontWeight: '800', letterSpacing: 0.5 },
+    headerSubtitle: { color: COLORS.lilac, marginTop: 6 },
+    grid: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: 12,
+    },
+    card: {
+      width: (SCREEN_W - 20 * 2 - 12) / 2,
+      borderRadius: 16,
+      padding: 16,
+      borderWidth: 1,
+      borderColor: 'rgba(255,255,255,0.14)',
+    },
+    pill: {
+      width: 24,
+      height: 6,
+      borderRadius: 3,
+      marginBottom: 10,
+      opacity: 0.9,
+    },
+    cardTitle: { color: COLORS.white, fontWeight: '800', fontSize: 16 },
+    cardDesc: { color: 'rgba(241,250,238,0.75)', fontSize: 12, marginTop: 4, minHeight: 36 },
+    cardBtn: {
+      backgroundColor: 'rgba(61, 90, 128, 0.55)',
+      paddingVertical: 10,
+      borderRadius: 10,
+      alignItems: 'center',
+      marginTop: 10,
+      borderWidth: 1,
+      borderColor: 'rgba(255,255,255,0.12)'
+    },
+    cardBtnText: { color: COLORS.white, fontWeight: '700' },
+    logoutBtn: {
+      alignSelf: 'center',
+      marginTop: 8,
+      paddingVertical: 12,
+      paddingHorizontal: 18,
+      borderRadius: 12,
+      backgroundColor: 'rgba(157, 78, 221, 0.3)',
+      borderWidth: 1,
+      borderColor: 'rgba(255,255,255,0.16)'
+    },
+    logoutText: { color: COLORS.white, fontWeight: '700' },
   } as const;
 }
